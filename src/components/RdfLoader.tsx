@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import * as RDF from 'rdflib';
 
 interface RdfLoaderProps {
@@ -7,9 +7,16 @@ interface RdfLoaderProps {
   store?: RDF.Store | null;
 }
 
+interface LoadedOntology {
+  name: string;
+  uri: string;
+  statements: number;
+}
+
 const RdfLoader: React.FC<RdfLoaderProps> = ({ onRdfLoaded, setLoading, store }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const ontologyInputRef = useRef<HTMLInputElement>(null);
+  const [loadedOntologies, setLoadedOntologies] = useState<LoadedOntology[]>([]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -154,6 +161,15 @@ const RdfLoader: React.FC<RdfLoaderProps> = ({ onRdfLoaded, setLoading, store })
           );
         });
         
+        // Add ontology to the list of loaded ontologies
+        const newOntology: LoadedOntology = {
+          name: filename,
+          uri: baseUri,
+          statements: statementsToAdd.length
+        };
+        
+        setLoadedOntologies(prev => [...prev, newOntology]);
+        
         // Pass the enhanced store back without triggering a subjects update
         // We use a special flag or property to indicate this is an ontology update
         onRdfLoaded(existingStore, true);
@@ -191,6 +207,19 @@ const RdfLoader: React.FC<RdfLoaderProps> = ({ onRdfLoaded, setLoading, store })
             disabled={!store}
           />
           <p><small>Ontology will be filtered to include only entities referenced in the data.</small></p>
+          
+          {loadedOntologies.length > 0 && (
+            <div style={{ marginTop: '10px' }}>
+              <h4>Loaded Ontologies:</h4>
+              <ul style={{ fontSize: '0.9em', paddingLeft: '20px' }}>
+                {loadedOntologies.map((ontology, index) => (
+                  <li key={index}>
+                    {ontology.name} <small>({ontology.statements} statements)</small>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
     </div>
