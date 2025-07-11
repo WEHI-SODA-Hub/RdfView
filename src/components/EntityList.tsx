@@ -1,25 +1,19 @@
 import React from 'react';
-import * as RDF from 'rdflib';
+import { NamedNode } from 'rdflib/lib/tf-types';
 
 interface EntityListProps {
-  entities: RDF.NamedNode[];
-  selectedEntity: RDF.NamedNode | null;
-  onEntitySelect: (entity: RDF.NamedNode, updateHistory?: boolean) => void;
+  entities: NamedNode[];
+  selectedEntity: NamedNode | null;
+  onEntitySelect: (entity: NamedNode, updateHistory?: boolean) => void;
+  getEntityLabel: (entity: NamedNode) => string;
 }
 
 const EntityList: React.FC<EntityListProps> = ({ 
   entities, 
   selectedEntity, 
-  onEntitySelect 
+  onEntitySelect,
+  getEntityLabel
 }) => {
-  // Function to get a friendly display name for an entity
-  const getEntityLabel = (entity: RDF.NamedNode): string => {
-    // Extract the last part of the URI for display
-    const uri = entity.value;
-    const lastPart = uri.split(/[/#]/).pop();
-    return lastPart || uri;
-  };
-
   return (
     <div className="entity-list">
       <h2>Entities</h2>

@@ -4,14 +4,65 @@ import * as RDF from 'rdflib';
 import EntityList from './components/EntityList';
 import PropertyTable from './components/PropertyTable';
 import RdfLoader from './components/RdfLoader';
+import { NamedNode } from 'rdflib/lib/tf-types';
 
 const queryClient = new QueryClient();
 
+// Standard RDF vocabularies
+const RDFS = RDF.Namespace("http://www.w3.org/2000/01/rdf-schema#");
+const RDF_NS = RDF.Namespace("http://www.w3.org/1999/02/22-rdf-syntax-ns#");
+const OWL = RDF.Namespace("http://www.w3.org/2002/07/owl#");
+const SKOS = RDF.Namespace("http://www.w3.org/2004/02/skos/core#");
+
+// Known label predicates
+const KNOWN_LABEL_PREDICATES: NamedNode[] = [
+  RDFS('label'),
+];
+
 const App: React.FC = () => {
   const [store, setStore] = useState<RDF.Store | null>(null);
-  const [entities, setEntities] = useState<RDF.NamedNode[]>([]);
-  const [selectedEntity, setSelectedEntity] = useState<RDF.NamedNode | null>(null);
+  const [entities, setEntities] = useState<NamedNode[]>([]);
+  const [selectedEntity, setSelectedEntity] = useState<NamedNode | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [labelPredicates, setLabelPredicates] = useState<NamedNode[]>(KNOWN_LABEL_PREDICATES);
+
+  // Function to find all label predicates in the store
+  const findLabelPredicates = (store: RDF.Store): NamedNode[] => {
+    // Start with our known label predicates
+    const result = new Set<NamedNode>(KNOWN_LABEL_PREDICATES);
+    
+    // Find all predicates that are subPropertyOf rdfs:label
+    const labelPredicate = RDFS('label');
+    const subPropertyPredicate = RDFS('subPropertyOf');
+    
+    // Get all statements where something is a subproperty of rdfs:label
+    const statements = store.statementsMatching(null, subPropertyPredicate, labelPredicate, null);
+    statements.forEach(statement => {
+      if (statement.subject.termType === 'NamedNode') {
+        result.add(statement.subject as NamedNode);
+      }
+    });
+    
+    return Array.from(result);
+  };
+
+  // Function to get the label for an entity using available label predicates
+  const getEntityLabel = (entity: NamedNode): string => {
+    if (!store) return entity.value;
+    
+    // Try each label predicate in order
+    for (const labelPredicate of labelPredicates) {
+      const labels = store.statementsMatching(entity, labelPredicate, null, null);
+      if (labels.length > 0) {
+        return labels[0].object.value;
+      }
+    }
+    
+    // If no label found, return the URI or its last part
+    const uri = entity.value;
+    const lastPart = uri.split(/[/#]/).pop();
+    return lastPart || uri;
+  };
 
   // Check URL for entity on initial load
   useEffect(() => {
@@ -32,13 +83,17 @@ const App: React.FC = () => {
     setStore(loadedStore);
     setLoading(false);
     
+    // Update label predicates whenever the store changes
+    const updatedLabelPredicates = findLabelPredicates(loadedStore);
+    setLabelPredicates(updatedLabelPredicates);
+    
     // Only update entities list if this is not an ontology load
     if (!isOntology) {
       // Extract only subjects from the store (including blank nodes)
-      const subjects = new Set<RDF.NamedNode | RDF.BlankNode>();
+      const subjects = new Set<NamedNode | RDF.BlankNode>();
       loadedStore.statements.forEach(quad => {
         if (quad.subject.termType === 'NamedNode' || quad.subject.termType === 'BlankNode') {
-          subjects.add(quad.subject as RDF.NamedNode | RDF.BlankNode);
+          subjects.add(quad.subject as NamedNode | RDF.BlankNode);
         }
         // Note: Not including entities that only appear as objects
       });
@@ -46,7 +101,7 @@ const App: React.FC = () => {
       // Filter to get only named nodes for the list
       const entityList = Array.from(subjects).filter(
         subject => subject.termType === 'NamedNode'
-      ) as RDF.NamedNode[];
+      ) as NamedNode[];
       
       setEntities(entityList);
       
@@ -70,7 +125,7 @@ const App: React.FC = () => {
     }
   };
 
-  const handleEntitySelect = (entity: RDF.NamedNode, updateHistory = true) => {
+  const handleEntitySelect = (entity: NamedNode, updateHistory = true) => {
     setSelectedEntity(entity);
     
     // Update URL with the selected entity
@@ -105,12 +160,15 @@ const App: React.FC = () => {
           <EntityList 
             entities={entities} 
             selectedEntity={selectedEntity} 
-            onEntitySelect={handleEntitySelect} 
+            onEntitySelect={handleEntitySelect}
+            getEntityLabel={getEntityLabel}
           />
           <PropertyTable 
             store={store} 
             subject={selectedEntity} 
-            onEntityClick={handleEntitySelect} 
+            onEntityClick={handleEntitySelect}
+            getEntityLabel={getEntityLabel}
+            labelPredicates={labelPredicates}
           />
         </div>
       ) : (

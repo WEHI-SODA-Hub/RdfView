@@ -1,10 +1,13 @@
 import React from 'react';
 import * as RDF from 'rdflib';
+import { NamedNode } from 'rdflib/lib/tf-types';
 
 interface PropertyTableProps {
   store: RDF.Store;
-  subject: RDF.NamedNode | null;
-  onEntityClick: (entity: RDF.NamedNode, updateHistory?: boolean) => void;
+  subject: NamedNode | null;
+  onEntityClick: (entity: NamedNode, updateHistory?: boolean) => void;
+  getEntityLabel: (entity: NamedNode) => string;
+  labelPredicates: NamedNode[];
 }
 
 interface PropertyRow {
@@ -19,7 +22,9 @@ interface PropertyRow {
 const PropertyTable: React.FC<PropertyTableProps> = ({
   store,
   subject,
-  onEntityClick
+  onEntityClick,
+  getEntityLabel,
+  labelPredicates
 }) => {
   if (!subject || !store) {
     return <div className="property-table">Select an entity to view its properties</div>;
@@ -38,8 +43,13 @@ const PropertyTable: React.FC<PropertyTableProps> = ({
     // Check if predicate exists as a subject in the store
     const isPredicateClickable = store.statementsMatching(predicate, null, null, null).length > 0;
     
+    // Get predicate label
+    const predicateLabel = predicate.termType === 'NamedNode' 
+      ? getEntityLabel(predicate as NamedNode)
+      : predicate.value.split(/[/#]/).pop() || predicate.value;
+    
     return {
-      predicate: getPrefixedName(predicate.value),
+      predicate: predicateLabel,
       predicateUri: predicate.value,
       object: object.value,
       objectUri: object.value,
@@ -47,13 +57,6 @@ const PropertyTable: React.FC<PropertyTableProps> = ({
       isPredicateClickable: isPredicateClickable
     };
   });
-
-  // Helper function to get a prefixed name for display
-  function getPrefixedName(uri: string): string {
-    // Extract the last part of the URI for display
-    const lastPart = uri.split(/[/#]/).pop();
-    return lastPart || uri;
-  }
 
   // Function to handle clicking on an entity reference
   const handleEntityClick = (uri: string) => {
@@ -75,7 +78,7 @@ const PropertyTable: React.FC<PropertyTableProps> = ({
 
   return (
     <div className="property-table">
-      <h2>Properties of {getPrefixedName(subject.value)}</h2>
+      <h2>Properties of {getEntityLabel(subject)}</h2>
       <p><small>{subject.value}</small></p>
       
       {data.length === 0 ? (
@@ -112,7 +115,7 @@ const PropertyTable: React.FC<PropertyTableProps> = ({
                       className="property-link"
                       onClick={() => handleEntityClick(row.objectUri)}
                     >
-                      {getPrefixedName(row.object)}
+                      {getEntityLabel(RDF.sym(row.objectUri))}
                     </span>
                   ) : (
                     row.object
