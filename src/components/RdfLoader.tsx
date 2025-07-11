@@ -43,8 +43,8 @@ const RdfLoader: React.FC<RdfLoaderProps> = ({ onRdfLoaded, setLoading }) => {
     }
     
     try {
-      // Create a base URI for the RDF data
-      const baseUri = 'http://example.org/base';
+      // Create a base URI from the filename
+      const baseUri = `file://${filename}`;
       
       // Parse the RDF data
       RDF.parse(content, store, baseUri, contentType, (error, _) => {

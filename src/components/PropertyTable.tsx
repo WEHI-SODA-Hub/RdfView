@@ -4,7 +4,7 @@ import * as RDF from 'rdflib';
 interface PropertyTableProps {
   store: RDF.Store;
   subject: RDF.NamedNode | null;
-  onEntityClick: (entity: RDF.NamedNode) => void;
+  onEntityClick: (entity: RDF.NamedNode, updateHistory?: boolean) => void;
 }
 
 interface PropertyRow {

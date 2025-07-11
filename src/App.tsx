@@ -13,6 +13,21 @@ const App: React.FC = () => {
   const [selectedEntity, setSelectedEntity] = useState<RDF.NamedNode | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
 
+  // Check URL for entity on initial load
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const entityUri = params.get('entity');
+    
+    if (entityUri && store) {
+      try {
+        const entity = RDF.sym(entityUri);
+        handleEntitySelect(entity, false);
+      } catch (error) {
+        console.error('Error parsing entity URI from URL:', error);
+      }
+    }
+  }, [store]);
+
   const handleRdfLoaded = (loadedStore: RDF.Store) => {
     setStore(loadedStore);
     setLoading(false);
@@ -33,15 +48,48 @@ const App: React.FC = () => {
     
     setEntities(entityList);
     
-    // Select the first entity if available
-    if (entityList.length > 0) {
+    // Check if there's an entity in the URL, otherwise select the first entity
+    const params = new URLSearchParams(window.location.search);
+    const entityUri = params.get('entity');
+    
+    if (entityUri) {
+      try {
+        const entity = RDF.sym(entityUri);
+        setSelectedEntity(entity);
+      } catch (error) {
+        console.error('Error parsing entity URI from URL:', error);
+        if (entityList.length > 0) {
+          setSelectedEntity(entityList[0]);
+        }
+      }
+    } else if (entityList.length > 0) {
       setSelectedEntity(entityList[0]);
     }
   };
 
-  const handleEntitySelect = (entity: RDF.NamedNode) => {
+  const handleEntitySelect = (entity: RDF.NamedNode, updateHistory = true) => {
     setSelectedEntity(entity);
+    
+    // Update URL with the selected entity
+    if (updateHistory) {
+      const url = new URL(window.location.href);
+      url.searchParams.set('entity', entity.value);
+      window.history.pushState({ entityUri: entity.value }, '', url.toString());
+    }
   };
+  
+  // Handle browser back/forward navigation
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      if (event.state && event.state.entityUri && store) {
+        const entity = RDF.sym(event.state.entityUri);
+        setSelectedEntity(entity);
+      }
+    };
+    
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [store]);
 
   return (
     <QueryClientProvider client={queryClient}>

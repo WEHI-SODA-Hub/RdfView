@@ -4,7 +4,7 @@ import * as RDF from 'rdflib';
 interface EntityListProps {
   entities: RDF.NamedNode[];
   selectedEntity: RDF.NamedNode | null;
-  onEntitySelect: (entity: RDF.NamedNode) => void;
+  onEntitySelect: (entity: RDF.NamedNode, updateHistory?: boolean) => void;
 }
 
 const EntityList: React.FC<EntityListProps> = ({ 
