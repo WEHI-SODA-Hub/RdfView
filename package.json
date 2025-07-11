@@ -2,7 +2,7 @@
   "name": "rdf-viewer",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://WEHI-SODA-Hub.github.io/RdfViewer",
+  "homepage": "https://wehi-soda-hub.github.io/RdfView",
   "dependencies": {
     "@tanstack/react-query": "^5.0.0",
     "@tanstack/react-table": "^8.10.0",
