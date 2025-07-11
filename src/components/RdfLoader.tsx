@@ -47,7 +47,7 @@ const RdfLoader: React.FC<RdfLoaderProps> = ({ onRdfLoaded, setLoading }) => {
       const baseUri = 'http://example.org/base';
       
       // Parse the RDF data
-      RDF.parse(content, store, baseUri, contentType, (error, kb) => {
+      RDF.parse(content, store, baseUri, contentType, (error, _) => {
         // Pass the store to the parent component
         onRdfLoaded(store);
       });
@@ -58,44 +58,6 @@ const RdfLoader: React.FC<RdfLoaderProps> = ({ onRdfLoaded, setLoading }) => {
     }
   };
 
-  const handleDemoData = () => {
-    setLoading(true);
-    
-    // Create a sample RDF graph
-    const store = RDF.graph();
-    const RDF_NS = RDF.Namespace('http://www.w3.org/1999/02/22-rdf-syntax-ns#');
-    const RDFS_NS = RDF.Namespace('http://www.w3.org/2000/01/rdf-schema#');
-    const EX_NS = RDF.Namespace('http://example.org/');
-    
-    // Create some sample data
-    const alice = EX_NS('alice');
-    const bob = EX_NS('bob');
-    const charlie = EX_NS('charlie');
-    const person = EX_NS('Person');
-    
-    // Add triples to the store
-    store.add(alice, RDF_NS('type'), person);
-    store.add(alice, RDFS_NS('label'), RDF.literal('Alice Smith'));
-    store.add(alice, EX_NS('age'), RDF.literal('28'));
-    store.add(alice, EX_NS('email'), RDF.literal('alice@example.org'));
-    store.add(alice, EX_NS('knows'), bob);
-    
-    store.add(bob, RDF_NS('type'), person);
-    store.add(bob, RDFS_NS('label'), RDF.literal('Bob Johnson'));
-    store.add(bob, EX_NS('age'), RDF.literal('34'));
-    store.add(bob, EX_NS('email'), RDF.literal('bob@example.org'));
-    store.add(bob, EX_NS('knows'), charlie);
-    
-    store.add(charlie, RDF_NS('type'), person);
-    store.add(charlie, RDFS_NS('label'), RDF.literal('Charlie Brown'));
-    store.add(charlie, EX_NS('age'), RDF.literal('42'));
-    store.add(charlie, EX_NS('email'), RDF.literal('charlie@example.org'));
-    store.add(charlie, EX_NS('knows'), alice);
-    
-    // Pass the store to the parent component
-    onRdfLoaded(store);
-  };
-
   return (
     <div className="file-input">
       <input
@@ -103,11 +65,7 @@ const RdfLoader: React.FC<RdfLoaderProps> = ({ onRdfLoaded, setLoading }) => {
         accept=".rdf,.ttl,.nt,.jsonld,.n3,.xml,.json"
         onChange={handleFileChange}
         ref={fileInputRef}
-        style={{ marginRight: '10px' }}
       />
-      <button onClick={handleDemoData}>
-        Load Demo Data
-      </button>
     </div>
   );
 };
