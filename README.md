@@ -2,6 +2,8 @@
 
 **Visit https://wehi-soda-hub.github.io/RdfView/**.
 
+*Please note that this is in very early development and is basically a proof of concept at this point.*
+
 ## Motivation
 
 RdfView is similar to other table viewers like [`ro-crate-html-js`](https://github.com/Language-Research-Technology/ro-crate-html-js).
