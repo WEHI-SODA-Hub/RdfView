@@ -28,42 +28,45 @@ const App: React.FC = () => {
     }
   }, [store]);
 
-  const handleRdfLoaded = (loadedStore: RDF.Store) => {
+  const handleRdfLoaded = (loadedStore: RDF.Store, isOntology = false) => {
     setStore(loadedStore);
     setLoading(false);
     
-    // Extract only subjects from the store (including blank nodes)
-    const subjects = new Set<RDF.NamedNode | RDF.BlankNode>();
-    loadedStore.statements.forEach(quad => {
-      if (quad.subject.termType === 'NamedNode' || quad.subject.termType === 'BlankNode') {
-        subjects.add(quad.subject as RDF.NamedNode | RDF.BlankNode);
-      }
-      // Note: Not including entities that only appear as objects
-    });
-    
-    // Filter to get only named nodes for the list
-    const entityList = Array.from(subjects).filter(
-      subject => subject.termType === 'NamedNode'
-    ) as RDF.NamedNode[];
-    
-    setEntities(entityList);
-    
-    // Check if there's an entity in the URL, otherwise select the first entity
-    const params = new URLSearchParams(window.location.search);
-    const entityUri = params.get('entity');
-    
-    if (entityUri) {
-      try {
-        const entity = RDF.sym(entityUri);
-        setSelectedEntity(entity);
-      } catch (error) {
-        console.error('Error parsing entity URI from URL:', error);
-        if (entityList.length > 0) {
-          setSelectedEntity(entityList[0]);
+    // Only update entities list if this is not an ontology load
+    if (!isOntology) {
+      // Extract only subjects from the store (including blank nodes)
+      const subjects = new Set<RDF.NamedNode | RDF.BlankNode>();
+      loadedStore.statements.forEach(quad => {
+        if (quad.subject.termType === 'NamedNode' || quad.subject.termType === 'BlankNode') {
+          subjects.add(quad.subject as RDF.NamedNode | RDF.BlankNode);
         }
+        // Note: Not including entities that only appear as objects
+      });
+      
+      // Filter to get only named nodes for the list
+      const entityList = Array.from(subjects).filter(
+        subject => subject.termType === 'NamedNode'
+      ) as RDF.NamedNode[];
+      
+      setEntities(entityList);
+      
+      // Check if there's an entity in the URL, otherwise select the first entity
+      const params = new URLSearchParams(window.location.search);
+      const entityUri = params.get('entity');
+      
+      if (entityUri) {
+        try {
+          const entity = RDF.sym(entityUri);
+          setSelectedEntity(entity);
+        } catch (error) {
+          console.error('Error parsing entity URI from URL:', error);
+          if (entityList.length > 0) {
+            setSelectedEntity(entityList[0]);
+          }
+        }
+      } else if (entityList.length > 0) {
+        setSelectedEntity(entityList[0]);
       }
-    } else if (entityList.length > 0) {
-      setSelectedEntity(entityList[0]);
     }
   };
 
@@ -93,7 +96,7 @@ const App: React.FC = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <RdfLoader onRdfLoaded={handleRdfLoaded} setLoading={setLoading} />
+      <RdfLoader onRdfLoaded={handleRdfLoaded} setLoading={setLoading} store={store} />
       
       {loading ? (
         <div className="loading">Loading RDF data...</div>
