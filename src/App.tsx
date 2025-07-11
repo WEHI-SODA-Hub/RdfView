@@ -17,19 +17,20 @@ const App: React.FC = () => {
     setStore(loadedStore);
     setLoading(false);
     
-    // Extract all named entities (subjects) from the store
-    const subjects = new Set<RDF.NamedNode>();
-    loadedStore.statementsMatching().forEach(quad => {
-      if (quad.subject.termType === 'NamedNode') {
-        subjects.add(quad.subject as RDF.NamedNode);
+    // Extract only subjects from the store (including blank nodes)
+    const subjects = new Set<RDF.NamedNode | RDF.BlankNode>();
+    loadedStore.statements.forEach(quad => {
+      if (quad.subject.termType === 'NamedNode' || quad.subject.termType === 'BlankNode') {
+        subjects.add(quad.subject as RDF.NamedNode | RDF.BlankNode);
       }
-      // Also add objects that are named nodes (potential navigation targets)
-      if (quad.object.termType === 'NamedNode') {
-        subjects.add(quad.object as RDF.NamedNode);
-      }
+      // Note: Not including entities that only appear as objects
     });
     
-    const entityList = Array.from(subjects);
+    // Filter to get only named nodes for the list
+    const entityList = Array.from(subjects).filter(
+      subject => subject.termType === 'NamedNode'
+    ) as RDF.NamedNode[];
+    
     setEntities(entityList);
     
     // Select the first entity if available
