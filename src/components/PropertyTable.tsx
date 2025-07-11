@@ -13,6 +13,7 @@ interface PropertyRow {
   object: string;
   objectUri: string;
   isEntity: boolean;
+  isPredicateClickable: boolean;
 }
 
 const PropertyTable: React.FC<PropertyTableProps> = ({
@@ -34,12 +35,16 @@ const PropertyTable: React.FC<PropertyTableProps> = ({
     
     const isEntity = object.termType === 'NamedNode';
     
+    // Check if predicate exists as a subject in the store
+    const isPredicateClickable = store.statementsMatching(predicate, null, null, null).length > 0;
+    
     return {
       predicate: getPrefixedName(predicate.value),
       predicateUri: predicate.value,
       object: object.value,
       objectUri: object.value,
-      isEntity: isEntity
+      isEntity: isEntity,
+      isPredicateClickable: isPredicateClickable
     };
   });
 
@@ -54,6 +59,18 @@ const PropertyTable: React.FC<PropertyTableProps> = ({
   const handleEntityClick = (uri: string) => {
     const entityNode = RDF.sym(uri);
     onEntityClick(entityNode);
+  };
+
+  // Function to handle clicking on a predicate
+  const handlePredicateClick = (uri: string) => {
+    // Check if the predicate exists as a subject in the store
+    const predicateNode = RDF.sym(uri);
+    const statements = store.statementsMatching(predicateNode, null, null, null);
+    
+    // Only make it clickable if it exists as a subject in the store
+    if (statements.length > 0) {
+      onEntityClick(predicateNode);
+    }
   };
 
   return (
@@ -75,7 +92,18 @@ const PropertyTable: React.FC<PropertyTableProps> = ({
             {data.map((row, index) => (
               <tr key={index}>
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>
-                  <div>{row.predicate}</div>
+                  {row.isPredicateClickable ? (
+                    <div>
+                      <span
+                        className="property-link"
+                        onClick={() => handlePredicateClick(row.predicateUri)}
+                      >
+                        {row.predicate}
+                      </span>
+                    </div>
+                  ) : (
+                    <div>{row.predicate}</div>
+                  )}
                   <div><small>{row.predicateUri}</small></div>
                 </td>
                 <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>
