@@ -188,6 +188,7 @@ const App: React.FC = () => {
                   selectedEntity={selectedEntity} 
                   onEntitySelect={handleEntitySelect}
                   getEntityLabel={getEntityLabel}
+                  store={store}
                 />
               </Box>
               <Box style={{ flex: 1, overflowY: 'auto' }}>
