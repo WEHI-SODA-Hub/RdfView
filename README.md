@@ -14,3 +14,10 @@ In particular:
 * It shows triples with the same predicate separately instead of grouped
 * Any entity can be viewed, including classes
 * It's a web application, so non-technical users can use it
+
+## Technologies
+
+- React with TypeScript
+- RDFLib.js for RDF parsing and manipulation
+- TanStack Query for state management
+- Radix UI for a beautiful, accessible user interface

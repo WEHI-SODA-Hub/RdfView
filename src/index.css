@@ -1,54 +1,17 @@
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Keep these minimal styles as some might still be used by components */
 .app-container {
   display: flex;
   height: 100vh;
 }
 
-.entity-list {
-  width: 300px;
-  border-right: 1px solid #ccc;
-  overflow-y: auto;
-  padding: 10px;
-}
-
-.entity-item {
-  padding: 8px;
-  margin-bottom: 4px;
-  cursor: pointer;
-  border-radius: 4px;
-}
-
-.entity-item:hover {
-  background-color: #f0f0f0;
-}
-
-.entity-item.active {
-  background-color: #e0e0e0;
-}
-
-.property-table {
-  flex: 1;
-  padding: 20px;
-  overflow-y: auto;
-}
-
-.property-link {
-  color: #0066cc;
-  cursor: pointer;
-  text-decoration: underline;
-}
-
 .file-input {
   margin: 20px;
-  padding: 10px;
 }
 
 .loading {

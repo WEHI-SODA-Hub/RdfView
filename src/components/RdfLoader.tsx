@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import * as RDF from 'rdflib';
+import { Box, Text, Heading, Flex, Card, Button, ScrollArea } from '@radix-ui/themes';
 
 interface RdfLoaderProps {
   onRdfLoaded: (store: RDF.Store, isOntology?: boolean) => void;
@@ -68,8 +69,7 @@ const RdfLoader: React.FC<RdfLoaderProps> = ({ onRdfLoaded, setLoading, store })
     }
     
     try {
-      // Create a base URI from the filename
-      const baseUri = `file://${filename}`;
+      const baseUri = `file://`;
       
       // Parse the RDF data
       RDF.parse(content, store, baseUri, contentType, (error, _) => {
@@ -183,46 +183,68 @@ const RdfLoader: React.FC<RdfLoaderProps> = ({ onRdfLoaded, setLoading, store })
   };
 
   return (
-    <div className="file-input">
-      <div style={{ marginBottom: '15px' }}>
-        <label htmlFor="rdf-file">Load RDF Data: </label>
-        <input
-          id="rdf-file"
-          type="file"
-          accept=".rdf,.ttl,.nt,.jsonld,.n3,.xml,.json"
-          onChange={handleFileChange}
-          ref={fileInputRef}
-        />
-      </div>
-      
-      {store && (
-        <div>
-          <label htmlFor="ontology-file">Load Ontology: </label>
-          <input
-            id="ontology-file"
-            type="file"
-            accept=".rdf,.ttl,.nt,.jsonld,.n3,.xml,.json"
-            onChange={handleOntologyFileChange}
-            ref={ontologyInputRef}
-            disabled={!store}
-          />
-          <p><small>Ontology will be filtered to include only entities referenced in the data.</small></p>
+    <Box className="file-input">
+      <Box style={{ padding: '12px', marginBottom: '16px', backgroundColor: 'var(--color-panel-solid)', borderRadius: 'var(--radius-4)', border: '1px solid var(--gray-5)' }}>
+        <Flex direction="column" gap="3">
+          <Box mb="2">
+            <Text as="label" htmlFor="rdf-file" weight="bold" size="2">
+              Load RDF Data: 
+            </Text>
+            <Box mt="1">
+              <input
+                id="rdf-file"
+                type="file"
+                accept=".rdf,.ttl,.nt,.jsonld,.n3,.xml,.json"
+                onChange={handleFileChange}
+                ref={fileInputRef}
+                style={{ fontSize: '14px' }}
+              />
+            </Box>
+          </Box>
           
-          {loadedOntologies.length > 0 && (
-            <div style={{ marginTop: '10px' }}>
-              <h4>Loaded Ontologies:</h4>
-              <ul style={{ fontSize: '0.9em', paddingLeft: '20px' }}>
-                {loadedOntologies.map((ontology, index) => (
-                  <li key={index}>
-                    {ontology.name} <small>({ontology.statements} statements)</small>
-                  </li>
-                ))}
-              </ul>
-            </div>
+          {store && (
+            <Box>
+              <Text as="label" htmlFor="ontology-file" weight="bold" size="2">
+                Load Ontology: 
+              </Text>
+              <Box mt="1">
+                <input
+                  id="ontology-file"
+                  type="file"
+                  accept=".rdf,.ttl,.nt,.jsonld,.n3,.xml,.json"
+                  onChange={handleOntologyFileChange}
+                  ref={ontologyInputRef}
+                  disabled={!store}
+                  style={{ fontSize: '14px' }}
+                />
+              </Box>
+              <Text as="p" size="1" color="gray" mt="1">
+                Ontology will be filtered to include only entities referenced in the data.
+              </Text>
+              
+              {loadedOntologies.length > 0 && (
+                <Box mt="3">
+                  <Heading as="h4" size="3" mb="2">Loaded Ontologies:</Heading>
+                  <ScrollArea type="auto" scrollbars="vertical" style={{ maxHeight: '150px' }}>
+                    <Box asChild>
+                      <ul style={{ margin: '0', paddingLeft: '20px' }}>
+                        {loadedOntologies.map((ontology, index) => (
+                          <li key={index}>
+                            <Text size="2">
+                              {ontology.name} <Text size="1" color="gray">({ontology.statements} statements)</Text>
+                            </Text>
+                          </li>
+                        ))}
+                      </ul>
+                    </Box>
+                  </ScrollArea>
+                </Box>
+              )}
+            </Box>
           )}
-        </div>
-      )}
-    </div>
+        </Flex>
+      </Box>
+    </Box>
   );
 };
 

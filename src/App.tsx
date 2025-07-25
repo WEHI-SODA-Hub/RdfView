@@ -5,6 +5,7 @@ import EntityList from './components/EntityList';
 import PropertyTable from './components/PropertyTable';
 import RdfLoader from './components/RdfLoader';
 import { NamedNode } from 'rdflib/lib/tf-types';
+import { Container, Flex, Box, Text, Heading } from '@radix-ui/themes';
 
 const queryClient = new QueryClient();
 
@@ -151,29 +152,41 @@ const App: React.FC = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <RdfLoader onRdfLoaded={handleRdfLoaded} setLoading={setLoading} store={store} />
-      
-      {loading ? (
-        <div className="loading">Loading RDF data...</div>
-      ) : store ? (
-        <div className="app-container">
-          <EntityList 
-            entities={entities} 
-            selectedEntity={selectedEntity} 
-            onEntitySelect={handleEntitySelect}
-            getEntityLabel={getEntityLabel}
-          />
-          <PropertyTable 
-            store={store} 
-            subject={selectedEntity} 
-            onEntityClick={handleEntitySelect}
-            getEntityLabel={getEntityLabel}
-            labelPredicates={labelPredicates}
-          />
-        </div>
-      ) : (
-        <div className="loading">Please load an RDF file to begin</div>
-      )}
+      <Container size="4">
+        <Box py="4">
+          <RdfLoader onRdfLoaded={handleRdfLoaded} setLoading={setLoading} store={store} />
+        
+          {loading ? (
+            <Flex justify="center" align="center" p="6">
+              <Text size="4">Loading RDF data...</Text>
+            </Flex>
+          ) : store ? (
+            <Flex gap="4">
+              <Box className="entity-list" style={{ width: '300px', borderRight: '1px solid var(--gray-6)', overflowY: 'auto' }}>
+                <EntityList 
+                  entities={entities} 
+                  selectedEntity={selectedEntity} 
+                  onEntitySelect={handleEntitySelect}
+                  getEntityLabel={getEntityLabel}
+                />
+              </Box>
+              <Box style={{ flex: 1, overflowY: 'auto' }}>
+                <PropertyTable 
+                  store={store} 
+                  subject={selectedEntity} 
+                  onEntityClick={handleEntitySelect}
+                  getEntityLabel={getEntityLabel}
+                  labelPredicates={labelPredicates}
+                />
+              </Box>
+            </Flex>
+          ) : (
+            <Flex justify="center" align="center" height="9" p="6">
+              <Text size="4">Please load an RDF file to begin</Text>
+            </Flex>
+          )}
+        </Box>
+      </Container>
     </QueryClientProvider>
   );
 };

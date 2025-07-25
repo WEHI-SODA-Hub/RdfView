@@ -1,6 +1,7 @@
 import React from 'react';
 import * as RDF from 'rdflib';
 import { NamedNode } from 'rdflib/lib/tf-types';
+import { Heading, Text, Table, Box, Link } from '@radix-ui/themes';
 
 interface PropertyTableProps {
   store: RDF.Store;
@@ -27,7 +28,11 @@ const PropertyTable: React.FC<PropertyTableProps> = ({
   labelPredicates
 }) => {
   if (!subject || !store) {
-    return <div className="property-table">Select an entity to view its properties</div>;
+    return (
+      <Box p="4">
+        <Text>Select an entity to view its properties</Text>
+      </Box>
+    );
   }
 
   // Get all properties for the selected entity
@@ -77,56 +82,53 @@ const PropertyTable: React.FC<PropertyTableProps> = ({
   };
 
   return (
-    <div className="property-table">
-      <h2>Properties of {getEntityLabel(subject)}</h2>
-      <p><small>{subject.value}</small></p>
+    <Box p="4">
+      <Heading as="h2" size="5" mb="2">{getEntityLabel(subject)}</Heading>
+      <Text as="p" size="1" color="gray" mb="4">{subject.value}</Text>
       
       {data.length === 0 ? (
-        <p>No properties found for this entity</p>
+        <Text>No properties found for this entity</Text>
       ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr>
-              <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #ddd' }}>Property</th>
-              <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #ddd' }}>Value</th>
-            </tr>
-          </thead>
-          <tbody>
+        <Table.Root variant="surface">
+          <Table.Header>
+            <Table.Row>
+              <Table.ColumnHeaderCell>Property</Table.ColumnHeaderCell>
+              <Table.ColumnHeaderCell>Value</Table.ColumnHeaderCell>
+            </Table.Row>
+          </Table.Header>
+          <Table.Body>
             {data.map((row, index) => (
-              <tr key={index}>
-                <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>
+              <Table.Row key={index}>
+                <Table.Cell>
                   {row.isPredicateClickable ? (
-                    <div>
-                      <span
-                        className="property-link"
-                        onClick={() => handlePredicateClick(row.predicateUri)}
-                      >
+                    <>
+                      <Link onClick={() => handlePredicateClick(row.predicateUri)}>
                         {row.predicate}
-                      </span>
-                    </div>
+                      </Link>
+                      <Text as="div" size="1" color="gray">{row.predicateUri}</Text>
+                    </>
                   ) : (
-                    <div>{row.predicate}</div>
+                    <>
+                      <Text>{row.predicate}</Text>
+                      <Text as="div" size="1" color="gray">{row.predicateUri}</Text>
+                    </>
                   )}
-                  <div><small>{row.predicateUri}</small></div>
-                </td>
-                <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>
+                </Table.Cell>
+                <Table.Cell>
                   {row.isEntity ? (
-                    <span 
-                      className="property-link"
-                      onClick={() => handleEntityClick(row.objectUri)}
-                    >
+                    <Link onClick={() => handleEntityClick(row.objectUri)}>
                       {getEntityLabel(RDF.sym(row.objectUri))}
-                    </span>
+                    </Link>
                   ) : (
-                    row.object
+                    <Text>{row.object}</Text>
                   )}
-                </td>
-              </tr>
+                </Table.Cell>
+              </Table.Row>
             ))}
-          </tbody>
-        </table>
+          </Table.Body>
+        </Table.Root>
       )}
-    </div>
+    </Box>
   );
 };
 
