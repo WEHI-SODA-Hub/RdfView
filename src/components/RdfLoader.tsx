@@ -273,12 +273,6 @@ const RdfLoader: React.FC<RdfLoaderProps> = ({ onRdfLoaded, setLoading, store })
               </ScrollArea>
             </Box>
           )}
-          
-          {store && (
-            <Text as="p" size="1" color="gray" mt="1">
-              Ontology will be filtered to include only entities referenced in the data.
-            </Text>
-          )}
         </Flex>
       </Box>
     </Box>

@@ -5,7 +5,7 @@ import EntityList from './components/EntityList';
 import PropertyTable from './components/PropertyTable';
 import RdfLoader from './components/RdfLoader';
 import { NamedNode } from 'rdflib/lib/tf-types';
-import { Container, Flex, Box, Text, Heading } from '@radix-ui/themes';
+import { Container, Flex, Box, Text, Heading, Switch, Theme } from '@radix-ui/themes';
 
 const queryClient = new QueryClient();
 
@@ -26,6 +26,7 @@ const App: React.FC = () => {
   const [selectedEntity, setSelectedEntity] = useState<NamedNode | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [labelPredicates, setLabelPredicates] = useState<NamedNode[]>(KNOWN_LABEL_PREDICATES);
+  const [advancedMode, setAdvancedMode] = useState<boolean>(false);
 
   // Function to find all label predicates in the store
   const findLabelPredicates = (store: RDF.Store): NamedNode[] => {
@@ -50,6 +51,11 @@ const App: React.FC = () => {
   // Function to get the label for an entity using available label predicates
   const getEntityLabel = (entity: NamedNode): string => {
     if (!store) return entity.value;
+    
+    // In advanced mode, always show the full IRI
+    if (advancedMode) {
+      return entity.value;
+    }
     
     // Try each label predicate in order
     for (const labelPredicate of labelPredicates) {
@@ -154,7 +160,21 @@ const App: React.FC = () => {
     <QueryClientProvider client={queryClient}>
       <Container size="4">
         <Box py="4">
-          <RdfLoader onRdfLoaded={handleRdfLoaded} setLoading={setLoading} store={store} />
+          <Flex justify="between" align="center" mb="4">
+            <RdfLoader onRdfLoaded={handleRdfLoaded} setLoading={setLoading} store={store} />
+            
+            {store && (
+              <Flex align="center" gap="2">
+                <Text size="2">Simplified</Text>
+                <Switch 
+                  checked={advancedMode}
+                  onCheckedChange={setAdvancedMode}
+                  size="2"
+                />
+                <Text size="2">Advanced</Text>
+              </Flex>
+            )}
+          </Flex>
         
           {loading ? (
             <Flex justify="center" align="center" p="6">

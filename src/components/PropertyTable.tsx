@@ -83,8 +83,7 @@ const PropertyTable: React.FC<PropertyTableProps> = ({
 
   return (
     <Box p="4">
-      <Heading as="h2" size="5" mb="2">{getEntityLabel(subject)}</Heading>
-      <Text as="p" size="1" color="gray" mb="4">{subject.value}</Text>
+      <Heading as="h2" size="5" mb="2" title={subject.value}>{getEntityLabel(subject)}</Heading>
       
       {data.length === 0 ? (
         <Text>No properties found for this entity</Text>
@@ -101,22 +100,16 @@ const PropertyTable: React.FC<PropertyTableProps> = ({
               <Table.Row key={index}>
                 <Table.Cell>
                   {row.isPredicateClickable ? (
-                    <>
-                      <Link onClick={() => handlePredicateClick(row.predicateUri)}>
-                        {row.predicate}
-                      </Link>
-                      <Text as="div" size="1" color="gray">{row.predicateUri}</Text>
-                    </>
+                    <Link onClick={() => handlePredicateClick(row.predicateUri)} title={row.predicateUri}>
+                      {row.predicate}
+                    </Link>
                   ) : (
-                    <>
-                      <Text>{row.predicate}</Text>
-                      <Text as="div" size="1" color="gray">{row.predicateUri}</Text>
-                    </>
+                    <Text title={row.predicateUri}>{row.predicate}</Text>
                   )}
                 </Table.Cell>
                 <Table.Cell>
                   {row.isEntity ? (
-                    <Link onClick={() => handleEntityClick(row.objectUri)}>
+                    <Link onClick={() => handleEntityClick(row.objectUri)} title={row.objectUri}>
                       {getEntityLabel(RDF.sym(row.objectUri))}
                     </Link>
                   ) : (

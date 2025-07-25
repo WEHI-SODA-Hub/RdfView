@@ -38,6 +38,7 @@ const EntityList: React.FC<EntityListProps> = ({
                       backgroundColor: selectedEntity?.value === entity.value ? 'var(--accent-3)' : 'transparent',
                     }}
                     onClick={() => onEntitySelect(entity)}
+                    title={entity.value} // Show the full IRI on hover
                   >
                     <Text size="2">{getEntityLabel(entity)}</Text>
                   </li>
