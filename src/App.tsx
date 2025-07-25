@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as RDF from 'rdflib';
 import EntityList from './components/EntityList';
 import PropertyTable from './components/PropertyTable';
+import GraphView from './components/GraphView';
 import RdfLoader from './components/RdfLoader';
 import { NamedNode } from 'rdflib/lib/tf-types';
 import { Container, Flex, Box, Text, Heading, Switch, Theme } from '@radix-ui/themes';
@@ -27,6 +28,7 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [labelPredicates, setLabelPredicates] = useState<NamedNode[]>(KNOWN_LABEL_PREDICATES);
   const [advancedMode, setAdvancedMode] = useState<boolean>(false);
+  const [viewMode, setViewMode] = useState<'table' | 'graph'>('table');
 
   // Function to find all label predicates in the store
   const findLabelPredicates = (store: RDF.Store): NamedNode[] => {
@@ -164,14 +166,25 @@ const App: React.FC = () => {
             <RdfLoader onRdfLoaded={handleRdfLoaded} setLoading={setLoading} store={store} />
             
             {store && (
-              <Flex align="center" gap="2">
-                <Text size="2">Simplified</Text>
-                <Switch 
-                  checked={advancedMode}
-                  onCheckedChange={setAdvancedMode}
-                  size="2"
-                />
-                <Text size="2">Advanced</Text>
+              <Flex align="center" gap="4" style={{ flex: 1, justifyContent: 'flex-end' }}>
+                <Flex align="center" gap="2">
+                  <Text size="2">Table</Text>
+                  <Switch 
+                    checked={viewMode === 'graph'}
+                    onCheckedChange={(checked) => setViewMode(checked ? 'graph' : 'table')}
+                    size="2"
+                  />
+                  <Text size="2">Graph</Text>
+                </Flex>
+                <Flex align="center" gap="2">
+                  <Text size="2">Simplified</Text>
+                  <Switch 
+                    checked={advancedMode}
+                    onCheckedChange={setAdvancedMode}
+                    size="2"
+                  />
+                  <Text size="2">Advanced</Text>
+                </Flex>
               </Flex>
             )}
           </Flex>
@@ -181,26 +194,38 @@ const App: React.FC = () => {
               <Text size="4">Loading RDF data...</Text>
             </Flex>
           ) : store ? (
-            <Flex gap="4">
-              <Box className="entity-list" style={{ width: '300px', borderRight: '1px solid var(--gray-6)', overflowY: 'auto' }}>
-                <EntityList 
-                  entities={entities} 
-                  selectedEntity={selectedEntity} 
-                  onEntitySelect={handleEntitySelect}
-                  getEntityLabel={getEntityLabel}
+            viewMode === 'table' ? (
+              <Flex gap="4">
+                <Box className="entity-list" style={{ width: '300px', borderRight: '1px solid var(--gray-6)', overflowY: 'auto' }}>
+                  <EntityList 
+                    entities={entities} 
+                    selectedEntity={selectedEntity} 
+                    onEntitySelect={handleEntitySelect}
+                    getEntityLabel={getEntityLabel}
+                    store={store}
+                  />
+                </Box>
+                <Box style={{ flex: 1, overflowY: 'auto' }}>
+                  <PropertyTable 
+                    store={store} 
+                    subject={selectedEntity} 
+                    onEntityClick={handleEntitySelect}
+                    getEntityLabel={getEntityLabel}
+                    labelPredicates={labelPredicates}
+                  />
+                </Box>
+              </Flex>
+            ) : (
+              <Box style={{ width: '100%' }}>
+                <GraphView
                   store={store}
-                />
-              </Box>
-              <Box style={{ flex: 1, overflowY: 'auto' }}>
-                <PropertyTable 
-                  store={store} 
-                  subject={selectedEntity} 
+                  selectedEntity={selectedEntity}
                   onEntityClick={handleEntitySelect}
                   getEntityLabel={getEntityLabel}
-                  labelPredicates={labelPredicates}
+                  baseEntities={entities}
                 />
               </Box>
-            </Flex>
+            )
           ) : (
             <Flex justify="center" align="center" height="9" p="6">
               <Text size="4">Please load an RDF file to begin</Text>
