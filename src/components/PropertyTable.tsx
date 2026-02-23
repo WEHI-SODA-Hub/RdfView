@@ -1,37 +1,37 @@
 import React from 'react';
 import * as RDF from 'rdflib';
-import { NamedNode } from 'rdflib/lib/tf-types';
+import { NamedNode, Term, Quad_Subject as Subject } from 'rdflib/lib/tf-types';
 import { Heading, Text, Table, Box, Link } from '@radix-ui/themes';
 import * as Tooltip from '@radix-ui/react-tooltip';
+import { OntologyStore } from '../Store';
 
 // Import RDFS namespace
-const RDFS = RDF.Namespace("http://www.w3.org/2000/01/rdf-schema#");
 
 interface PropertyTableProps {
-  store: RDF.Store;
-  subject: NamedNode | null;
-  onEntityClick: (entity: NamedNode, updateHistory?: boolean) => void;
-  getEntityLabel: (entity: NamedNode) => string;
-  labelPredicates: NamedNode[];
+  store: OntologyStore;
+  subject: Subject | null;
+  onEntityClick: (entity: Subject, updateHistory?: boolean) => void;
 }
 
 interface PropertyRow {
+  // Predicate name
   predicate: string;
   predicateUri: string;
-  predicateComment?: string;
+  predicateDescription?: string;
+  predicateClickable: boolean;
+
+  // Object value (either entity label or literal value)
   object: string;
   objectUri: string;
-  objectComment?: string;
-  isEntity: boolean;
-  isPredicateClickable: boolean;
+  objectDescription?: string;
+  // Whether the object is an entity (i.e. not a literal)
+  objectIsEntity: boolean;
 }
 
-const PropertyTable: React.FC<PropertyTableProps> = ({
+export const PropertyTable: React.FC<PropertyTableProps> = ({
   store,
   subject,
   onEntityClick,
-  getEntityLabel,
-  labelPredicates
 }) => {
   if (!subject || !store) {
     return (
@@ -41,25 +41,8 @@ const PropertyTable: React.FC<PropertyTableProps> = ({
     );
   }
 
-  // Function to get the comment for an entity
-  const getEntityComment = (entityUri: string): string | undefined => {
-    if (!store) return undefined;
-    
-    // Use rdfs:comment predicate
-    const commentPredicate = RDFS('comment');
-    const entityNode = RDF.sym(entityUri);
-    const comments = store.statementsMatching(entityNode, commentPredicate, null, null);
-    
-    if (comments.length > 0) {
-      return comments[0].object.value;
-    }
-    
-    return undefined;
-  };
-
-
   // Get all properties for the selected entity
-  const statements = store.statementsMatching(subject, null, null, null);
+  const statements = store.data.statementsMatching(subject, null, null, null);
   
   // Convert to a format suitable for the table
   const data: PropertyRow[] = statements.map(statement => {
@@ -69,32 +52,18 @@ const PropertyTable: React.FC<PropertyTableProps> = ({
     const isEntity = object.termType === 'NamedNode';
     
     // Check if predicate exists as a subject in the store
-    const isPredicateClickable = store.statementsMatching(predicate, null, null, null).length > 0;
-    
-    // Get predicate label
-    const predicateLabel = predicate.termType === 'NamedNode' 
-      ? getEntityLabel(predicate as NamedNode)
-      : predicate.value.split(/[/#]/).pop() || predicate.value;
-    
-    // Get comments for predicate and object (if it's an entity)
-    const predicateComment = predicate.termType === 'NamedNode' 
-      ? getEntityComment(predicate.value)
-      : undefined;
-    
-    const objectComment = isEntity 
-      ? getEntityComment(object.value)
-      : undefined;
+    const isPredicateClickable = store.data.statementsMatching(predicate, null, null, null).length > 0;
     
     return {
-      predicate: predicateLabel,
+      predicate: store.nameFor(predicate),
       predicateUri: predicate.value,
-      predicateComment: predicateComment,
-      object: object.value,
+      predicateComment: store.descriptionFor(predicate),
+      predicateClickable: isPredicateClickable,
+      object: store.nameFor(object),
       objectUri: object.value,
-      objectComment: objectComment,
-      isEntity: isEntity,
-      isPredicateClickable: isPredicateClickable
-    };
+      objectDescription: store.descriptionFor(object),
+      objectIsEntity: isEntity,
+    } as PropertyRow;
   });
 
   // Function to handle clicking on an entity reference
@@ -107,31 +76,34 @@ const PropertyTable: React.FC<PropertyTableProps> = ({
   const handlePredicateClick = (uri: string) => {
     // Check if the predicate exists as a subject in the store
     const predicateNode = RDF.sym(uri);
-    const statements = store.statementsMatching(predicateNode, null, null, null);
+    const statements = store.data.statementsMatching(predicateNode, null, null, null);
     
     // Only make it clickable if it exists as a subject in the store
     if (statements.length > 0) {
       onEntityClick(predicateNode);
     }
   };
+
+  const description = store.descriptionFor(subject);
+
   return (
     <Tooltip.Provider delayDuration={300}>
       <Box p="4">
-{getEntityComment(subject.value) ? (
+{subject !== null ? (
           <Tooltip.Root>
             <Tooltip.Trigger asChild>
-              <Heading as="h2" size="5" mb="2">{getEntityLabel(subject)}</Heading>
+              <Heading as="h2" size="5" mb="2">{store.nameFor(subject)}</Heading>
             </Tooltip.Trigger>
             <Tooltip.Portal>
               <Tooltip.Content className="tooltip-content" sideOffset={5}>
-                <Text size="1" weight="bold">{getEntityLabel(subject)}</Text>
-                <Text size="1" style={{ color: 'var(--gray-11)' }}>{getEntityComment(subject.value)}</Text>
+                <Text size="1" weight="bold">{store.nameFor(subject)}</Text>
+                <Text size="1" style={{ color: 'var(--gray-11)' }}>{description}</Text>
                 <Tooltip.Arrow className="tooltip-arrow" />
               </Tooltip.Content>
             </Tooltip.Portal>
           </Tooltip.Root>
         ) : (
-          <Heading as="h2" size="5" mb="2">{getEntityLabel(subject)}</Heading>
+          <Heading as="h2" size="5" mb="2">{store.nameFor(subject)}</Heading>
         )}
         
         {data.length === 0 ? (
@@ -148,8 +120,8 @@ const PropertyTable: React.FC<PropertyTableProps> = ({
             {data.map((row, index) => (
               <Table.Row key={index}>
                 <Table.Cell>
-                  {row.isPredicateClickable ? (
-                    row.predicateComment ? (
+                  {row.predicateClickable ? (
+                    row.predicateDescription ? (
                       <Tooltip.Root>
                         <Tooltip.Trigger asChild>
                           <Link onClick={() => handlePredicateClick(row.predicateUri)}>
@@ -159,7 +131,7 @@ const PropertyTable: React.FC<PropertyTableProps> = ({
                         <Tooltip.Portal>
                           <Tooltip.Content className="tooltip-content" sideOffset={5}>
                             <Text size="1" weight="bold">{row.predicate}</Text>
-                            <Text size="1" style={{ color: 'var(--gray-11)' }}>{row.predicateComment}</Text>
+                            <Text size="1" style={{ color: 'var(--gray-11)' }}>{row.predicateDescription}</Text>
                             <Tooltip.Arrow className="tooltip-arrow" />
                           </Tooltip.Content>
                         </Tooltip.Portal>
@@ -170,7 +142,7 @@ const PropertyTable: React.FC<PropertyTableProps> = ({
                       </Link>
                     )
                   ) : (
-                    row.predicateComment ? (
+                    row.predicateDescription ? (
                       <Tooltip.Root>
                         <Tooltip.Trigger asChild>
                           <Text>{row.predicate}</Text>
@@ -178,7 +150,7 @@ const PropertyTable: React.FC<PropertyTableProps> = ({
                         <Tooltip.Portal>
                           <Tooltip.Content className="tooltip-content" sideOffset={5}>
                             <Text size="1" weight="bold">{row.predicate}</Text>
-                            <Text size="1" style={{ color: 'var(--gray-11)' }}>{row.predicateComment}</Text>
+                            <Text size="1" style={{ color: 'var(--gray-11)' }}>{row.predicateDescription}</Text>
                             <Tooltip.Arrow className="tooltip-arrow" />
                           </Tooltip.Content>
                         </Tooltip.Portal>
@@ -189,25 +161,25 @@ const PropertyTable: React.FC<PropertyTableProps> = ({
                   )}
                 </Table.Cell>
                 <Table.Cell>
-                  {row.isEntity ? (
-                    row.objectComment ? (
+                  {row.objectIsEntity ? (
+                    row.objectDescription ? (
                       <Tooltip.Root>
                         <Tooltip.Trigger asChild>
                           <Link onClick={() => handleEntityClick(row.objectUri)}>
-                            {getEntityLabel(RDF.sym(row.objectUri))}
+                            {store.nameFor(RDF.sym(row.objectUri))}
                           </Link>
                         </Tooltip.Trigger>
                         <Tooltip.Portal>
                           <Tooltip.Content className="tooltip-content" sideOffset={5}>
-                            <Text size="1" weight="bold">{getEntityLabel(RDF.sym(row.objectUri))}</Text>
-                            <Text size="1" style={{ color: 'var(--gray-11)' }}>{row.objectComment}</Text>
+                            <Text size="1" weight="bold">{store.nameFor(RDF.sym(row.objectUri))}</Text>
+                            <Text size="1" style={{ color: 'var(--gray-11)' }}>{row.objectDescription}</Text>
                             <Tooltip.Arrow className="tooltip-arrow" />
                           </Tooltip.Content>
                         </Tooltip.Portal>
                       </Tooltip.Root>
                     ) : (
                       <Link onClick={() => handleEntityClick(row.objectUri)}>
-                        {getEntityLabel(RDF.sym(row.objectUri))}
+                        {store.nameFor(RDF.sym(row.objectUri))}
                       </Link>
                     )
                   ) : (
