@@ -8,9 +8,11 @@ export type RdfUploadProps = {
     onUpload: (source: RdfSource) => void;
 }
 
+/**
+ * Component for uploading RDF files. It reads the file content and calls onUpload with the content and content type. 
+ */
 export const RdfUpload: React.FC<RdfUploadProps> = ({ onUpload }) => {
     const inputRef = useRef<HTMLInputElement>(null);
-    const [pendingSource, setPendingSource] = useState<{ file: File; source: RdfSource } | null>(null);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -23,22 +25,10 @@ export const RdfUpload: React.FC<RdfUploadProps> = ({ onUpload }) => {
         reader.onload = (event) => {
             const content = event.target?.result as string;
             if (content != null) {
-                setPendingSource({ file, source: { content, contentType } });
+                onUpload({ content, contentType });
             }
         };
         reader.readAsText(file);
-    };
-
-    const handleUpload = () => {
-        if (!pendingSource) return;
-        onUpload(pendingSource.source);
-        setPendingSource(null);
-        if (inputRef.current) inputRef.current.value = "";
-    };
-
-    const handleClear = () => {
-        setPendingSource(null);
-        if (inputRef.current) inputRef.current.value = "";
     };
 
     return (
@@ -53,15 +43,6 @@ export const RdfUpload: React.FC<RdfUploadProps> = ({ onUpload }) => {
                 onChange={handleFileChange}
                 style={{ display: "none" }}
             />
-            {pendingSource ? (
-                <>
-                    <Text size="2" color="gray">{pendingSource.file.name}</Text>
-                    <Button onClick={handleUpload}>Upload</Button>
-                    <Button variant="ghost" color="gray" onClick={handleClear}>Clear</Button>
-                </>
-            ) : (
-                <Text size="2" color="gray">No file selected</Text>
-            )}
         </Flex>
     );
 }

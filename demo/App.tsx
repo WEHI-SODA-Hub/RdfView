@@ -1,7 +1,7 @@
 import { Container } from '@radix-ui/themes';
 import React, { useState } from 'react';
-import { RdfUpload } from './components/RdfUpload';
-import { RdfSource, RdfViewer } from './components/RdfViewer';
+import { RdfUpload } from '../src/components/RdfUpload';
+import { RdfSource, RdfViewer } from '../src/components/RdfViewer';
 
 
 const App: React.FC = () => {

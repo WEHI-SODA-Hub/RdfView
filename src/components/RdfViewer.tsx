@@ -6,21 +6,36 @@ import { OntologyStore } from "../Store";
 import EntityList from './EntityList';
 import PropertyTable from './PropertyTable';
 
+/**
+ * Represents an RDF input
+ */
 export type RdfSource = {
     content: string;
     contentType: ContentType
 }
 
 export type RdfViewerProps = {
+    /**
+     * Zero or more RDF data sources to load and display
+     */
     dataSources: RdfSource[];
+    /**
+     * Zero or more RDF ontology sources to load. Entities are not displayed directly but only used for getting labels and descriptions
+     */ 
     ontologySources: RdfSource[];
+    /**
+     * Base URI to use when loading RDF data and ontologies
+     */
     baseUri: string
 }
 
+/**
+ * Re-usable component for viewing RDF data.
+ */
 export const RdfViewer: React.FC<RdfViewerProps> = ({ dataSources, ontologySources, baseUri }) => {
-    // TODO: use state instead of ref, to trigger re-renders
     const ontologyStore = useRef<OntologyStore>(new OntologyStore());
-    const [_, setStoreVersion] = useState(0); // dummy state to trigger re-renders
+    // dummy state to trigger re-renders
+    const [_, setStoreVersion] = useState(0);
     const [selectedEntity, setSelectedEntity] = useState<Subject | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
 
@@ -49,10 +64,9 @@ export const RdfViewer: React.FC<RdfViewerProps> = ({ dataSources, ontologySourc
 
     let content;
     if (loading) {
-
         content = (<Flex justify="center" align="center" p="6">
             <Text size="4">Loading RDF data...</Text>
-        </Flex>)
+        </Flex>);
     }
     else {
         content = (<Flex gap="4">
