@@ -1,13 +1,14 @@
 import { Box, Heading, ScrollArea, Text } from '@radix-ui/themes';
 import { Quad_Subject as Subject } from 'rdflib/lib/tf-types';
 import React from 'react';
-import { OntologyStore } from '../Store';
 
 
 interface EntityListProps {
-  store: OntologyStore;
+  entities: Subject[];
   selectedEntity: Subject | null;
   onEntitySelect: (entity: Subject, updateHistory?: boolean) => void;
+  nameFor: (entity: Subject) => React.ReactNode;
+  descriptionFor: (entity: Subject) => React.ReactNode;
 }
 
 /**
@@ -16,9 +17,10 @@ interface EntityListProps {
 const EntityList: React.FC<EntityListProps> = ({
   selectedEntity,
   onEntitySelect,
-  store
+  nameFor,
+  entities,
+  descriptionFor
 }) => {
-  const entities = [... new Set(store.getSubjects())];
   return (
     <Box>
       <Heading as="h2" size="4" mb="3">Entities</Heading>
@@ -29,7 +31,8 @@ const EntityList: React.FC<EntityListProps> = ({
           <Box asChild>
             <ul style={{ listStyleType: 'none', padding: 0 }}>
               {entities.map((entity) => {
-                const name = store.entityName(entity);
+                const name = nameFor(entity);
+                const description = descriptionFor(entity);
                 return <Box
                   key={entity.value}
                   asChild

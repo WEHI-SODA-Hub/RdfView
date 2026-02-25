@@ -1,16 +1,37 @@
-import React from 'react';
-import * as RDF from 'rdflib';
-import { NamedNode, Term, Quad_Subject as Subject } from 'rdflib/lib/tf-types';
-import { Heading, Text, Table, Box, Link } from '@radix-ui/themes';
 import * as Tooltip from '@radix-ui/react-tooltip';
-import { OntologyStore } from '../Store';
+import { Box, Heading, Link, Table, Text } from '@radix-ui/themes';
+import * as RDF from 'rdflib';
+import { Quad_Subject as Subject, Term } from 'rdflib/lib/tf-types';
+import React from 'react';
 
 // Import RDFS namespace
 
 interface PropertyTableProps {
-  store: OntologyStore;
+  /**
+   * The entity currently being displayed
+   */
   subject: Subject | null;
+  /**
+   * Statements about that entity
+   */
+  statements: RDF.Statement[];
+  /**
+   * Gets the display name for an entity 
+   */
+  nameFor: (entity: Term) => React.ReactNode;
+  /**
+   * Gets a description for an entity 
+   */
+  descriptionFor: (entity: Term) => React.ReactNode;
+  /**
+   * Callback for when an entity is clicked 
+   */
   onEntityClick: (entity: Subject, updateHistory?: boolean) => void;
+  /**
+   * True if this entity has statements about it. 
+   * This can be used to determine whether to make the predicate clickable (i.e. if it has statements about it, it can be clicked to view those statements).
+   */
+  hasStatements: (predicate: Term) => boolean;
 }
 
 interface PropertyRow {
@@ -29,11 +50,14 @@ interface PropertyRow {
 }
 
 export const PropertyTable: React.FC<PropertyTableProps> = ({
-  store,
   subject,
   onEntityClick,
+  statements,
+  nameFor,
+  descriptionFor,
+  hasStatements
 }) => {
-  if (!subject || !store) {
+  if (!subject) {
     return (
       <Box p="4">
         <Text>Select an entity to view its properties</Text>
@@ -41,9 +65,6 @@ export const PropertyTable: React.FC<PropertyTableProps> = ({
     );
   }
 
-  // Get all properties for the selected entity
-  const statements = store.data.statementsMatching(subject, null, null, null);
-  
   // Convert to a format suitable for the table
   const data: PropertyRow[] = statements.map(statement => {
     const predicate = statement.predicate;
@@ -51,17 +72,14 @@ export const PropertyTable: React.FC<PropertyTableProps> = ({
     
     const isEntity = object.termType === 'NamedNode';
     
-    // Check if predicate exists as a subject in the store
-    const isPredicateClickable = store.data.statementsMatching(predicate, null, null, null).length > 0;
-    
     return {
-      predicate: store.nameFor(predicate),
+      predicate: nameFor(predicate),
       predicateUri: predicate.value,
-      predicateComment: store.descriptionFor(predicate),
-      predicateClickable: isPredicateClickable,
-      object: store.nameFor(object),
+      predicateComment: descriptionFor(predicate),
+      predicateClickable: hasStatements(predicate),
+      object: nameFor(object),
       objectUri: object.value,
-      objectDescription: store.descriptionFor(object),
+      objectDescription: descriptionFor(object),
       objectIsEntity: isEntity,
     } as PropertyRow;
   });
@@ -76,15 +94,14 @@ export const PropertyTable: React.FC<PropertyTableProps> = ({
   const handlePredicateClick = (uri: string) => {
     // Check if the predicate exists as a subject in the store
     const predicateNode = RDF.sym(uri);
-    const statements = store.data.statementsMatching(predicateNode, null, null, null);
     
     // Only make it clickable if it exists as a subject in the store
-    if (statements.length > 0) {
+    if (hasStatements(predicateNode)) {
       onEntityClick(predicateNode);
     }
   };
 
-  const description = store.descriptionFor(subject);
+  const description = descriptionFor(subject);
 
   return (
     <Tooltip.Provider delayDuration={300}>
@@ -92,18 +109,18 @@ export const PropertyTable: React.FC<PropertyTableProps> = ({
 {subject !== null ? (
           <Tooltip.Root>
             <Tooltip.Trigger asChild>
-              <Heading as="h2" size="5" mb="2">{store.nameFor(subject)}</Heading>
+              <Heading as="h2" size="5" mb="2">{nameFor(subject)}</Heading>
             </Tooltip.Trigger>
             <Tooltip.Portal>
               <Tooltip.Content className="tooltip-content" sideOffset={5}>
-                <Text size="1" weight="bold">{store.nameFor(subject)}</Text>
+                <Text size="1" weight="bold">{nameFor(subject)}</Text>
                 <Text size="1" style={{ color: 'var(--gray-11)' }}>{description}</Text>
                 <Tooltip.Arrow className="tooltip-arrow" />
               </Tooltip.Content>
             </Tooltip.Portal>
           </Tooltip.Root>
         ) : (
-          <Heading as="h2" size="5" mb="2">{store.nameFor(subject)}</Heading>
+          <Heading as="h2" size="5" mb="2">{nameFor(subject)}</Heading>
         )}
         
         {data.length === 0 ? (
@@ -166,12 +183,12 @@ export const PropertyTable: React.FC<PropertyTableProps> = ({
                       <Tooltip.Root>
                         <Tooltip.Trigger asChild>
                           <Link onClick={() => handleEntityClick(row.objectUri)}>
-                            {store.nameFor(RDF.sym(row.objectUri))}
+                            {nameFor(RDF.sym(row.objectUri))}
                           </Link>
                         </Tooltip.Trigger>
                         <Tooltip.Portal>
                           <Tooltip.Content className="tooltip-content" sideOffset={5}>
-                            <Text size="1" weight="bold">{store.nameFor(RDF.sym(row.objectUri))}</Text>
+                            <Text size="1" weight="bold">{nameFor(RDF.sym(row.objectUri))}</Text>
                             <Text size="1" style={{ color: 'var(--gray-11)' }}>{row.objectDescription}</Text>
                             <Tooltip.Arrow className="tooltip-arrow" />
                           </Tooltip.Content>
@@ -179,7 +196,7 @@ export const PropertyTable: React.FC<PropertyTableProps> = ({
                       </Tooltip.Root>
                     ) : (
                       <Link onClick={() => handleEntityClick(row.objectUri)}>
-                        {store.nameFor(RDF.sym(row.objectUri))}
+                        {nameFor(RDF.sym(row.objectUri))}
                       </Link>
                     )
                   ) : (

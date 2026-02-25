@@ -37,6 +37,7 @@ export const EXTENSION_TO_CONTENT_TYPE: Record<string, ContentType> = {
     ".nq": "application/n-quads",
     ".rdf": "application/rdf+xml",
     ".owl": "application/rdf+xml",
+    ".xml": "application/rdf+xml",
     ".jsonld": "application/ld+json",
     ".json": "application/ld+json",
 };

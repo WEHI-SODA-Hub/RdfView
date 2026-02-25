@@ -9,18 +9,21 @@ import { label, comment, subPropertyOf } from '../src/RDFS.ts';
 
 const FILTER_PREDICATES = [label, comment, subPropertyOf];
 
-async function main(): Promise<void> {
-    const files = process.argv.slice(2);
+export async function main(files: string[], out: NodeJS.WritableStream = process.stdout): Promise<void> {
     const store = RDF.graph();
 
     for (const filePath of files) {
         const absPath = path.resolve(filePath);
-        let content: string;
-        content = fs.readFileSync(absPath, 'utf8');
+        const content = fs.readFileSync(absPath, 'utf8');
         const ext = path.extname(absPath).toLowerCase();
         const contentType = EXTENSION_TO_CONTENT_TYPE[ext] ?? 'text/turtle';
         const baseUri = `file://${absPath}`;
-        await parseRdf(store, content, baseUri, contentType);
+        try {
+            await parseRdf(store, content, baseUri, contentType);
+        }
+        catch (error) {
+            console.error(`Error parsing ${filePath}:`, error);
+        }
     }
 
     const filteredStore = RDF.graph();
@@ -31,11 +34,8 @@ async function main(): Promise<void> {
     }
 
     const turtle = await serializeRdf(filteredStore, 'http://example.org/', 'text/turtle');
-    process.stdout.write(turtle);
+    out.write(turtle);
 }
-await main();
 
-// main().catch(err => {
-//     process.stderr.write(`Unexpected error: ${err.message}\n`);
-//     process.exit(1);
-// });
+// Run directly when invoked as a script
+await main(process.argv.slice(2));

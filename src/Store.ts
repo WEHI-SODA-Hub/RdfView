@@ -41,7 +41,7 @@ export class OntologyStore {
     *getSubjects(): Generator<Subject> {
         for (const statement of this.data.statements) {
             yield statement.subject as Subject;
-        }   
+        }
     }
 
     /**
@@ -62,46 +62,59 @@ export class OntologyStore {
         });
     }
 
-    nameFor(term: Term): string {
-        if (term.termType === 'Literal') return term.value;
-        else return this.entityName(term as Subject);
-    }
-
     anyStatementsMatching(subject: Subject | null, predicate: NamedNode | null, object: Term | null): RDF.Statement[] {
         return [...this.data.statementsMatching(subject, predicate, object, null), ...this.ontology.statementsMatching(subject, predicate, object, null)];
     }
 
     /**
-     * Gets a human readable name for an entity
+     * Gets a human readable name for an entity, or null if no name can be found.
      */
-    entityName(entity: Subject): string {
-        for (const labelPredicate of this.namePredicates) {
-            for (const label of this.anyStatementsMatching(entity, labelPredicate, null)) {
-                return label.object.value;
-            }
+    entityName(term: Term): string | null {
+        if (term instanceof RDF.Literal) return term.value;
+        else if (term instanceof RDF.Variable) {
+            throw new Error(`Cannot get name for variable ${term.value}`);
         }
-        throw new Error(`No label found for entity ${entity.value}`);
+        else if (term instanceof RDF.BlankNode || term instanceof RDF.NamedNode) {
+            for (const labelPredicate of this.namePredicates) {
+                for (const label of this.anyStatementsMatching(term, labelPredicate, null)) {
+                    return label.object.value;
+                }
+            }
+            return null;
+        }
+        else {
+            return null;
+        }
     }
 
     /**
-     * Gets a description for any term 
+     * Same as entityName but returns a default string if no name can be found.
      */
-    descriptionFor(entity: Term): string | null {
-        if (entity.termType === 'Literal') return null;
-        else return this.entityDescription(entity as Subject);
-    }
+    // nameFor(term: Term): string {
+    //     return this.entityName(term) || "<Unnamed entity>";
+    // }
+
 
     /**
-     * Gets a human readable description for an entity
+     * Same as entityDescription but returns an empty string if no description can be found.
      */
-    entityDescription(entity: Subject): string {
+    // descriptionFor(entity: Term): string {
+    //     return this.entityDescription(entity) || ""
+    // }
+
+    /**
+     * Gets a human readable description for a term, returning null if no description can be found.
+     */
+    entityDescription(entity: Term): string | null {
         // Try each description predicate in order
+        if (entity instanceof RDF.NamedNode || entity instanceof RDF.BlankNode) {
         for (const descriptionPredicate of this.descriptionPredicates) {
             for (const description of this.anyStatementsMatching(entity, descriptionPredicate, null)) {
                 return description.object.value;
             }
         }
-        throw new Error(`No description found for entity ${entity.value}`);
+    }
+        return null;
 
         // TODO: consider handling case where no description is found 
         // If no label found, return the URI or its last part
