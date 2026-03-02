@@ -88,6 +88,41 @@ export class OntologyStore {
     }
 
     /**
+     *  Yields all types for a given entity, looking in both the data and ontology stores. 
+     */
+    *iterTypes(entity: NamedNode | RDF.BlankNode): Generator<NamedNode> {
+        for (const typeStatement of this.anyStatementsMatching(entity, RDF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'), null)) {
+            if (typeStatement.object instanceof RDF.NamedNode) {
+                yield typeStatement.object;
+            }
+        }
+    }
+
+    /**
+     * Yields display-friendly types for a given entity 
+     * @param preferredPrefix Optionally, a prefix to filter types by
+     */
+    *displayTypes(entity: NamedNode | RDF.BlankNode, preferredPrefix: string | null = null): Generator<string> {
+        for (const type of this.iterTypes(entity)) {
+            // Skip types that don't match the preferred prefix, if provided.
+            if (preferredPrefix && !type.value.startsWith(preferredPrefix)) {
+                continue;
+            }
+            const name = this.entityName(type);
+            if (name) {
+                yield name;
+            }
+        }
+    }
+
+    /**
+     * Gets a display-friendly type for an entity, returning null if no types are found or if none match the preferred prefix (if provided).
+     */
+    displayType(entity: NamedNode | RDF.BlankNode, preferredPrefix: string | null = null): string | null {
+        return this.displayTypes(entity, preferredPrefix).next().value ?? null
+    }
+
+    /**
      * Same as entityName but returns a default string if no name can be found.
      */
     // nameFor(term: Term): string {
@@ -108,12 +143,12 @@ export class OntologyStore {
     entityDescription(entity: Term): string | null {
         // Try each description predicate in order
         if (entity instanceof RDF.NamedNode || entity instanceof RDF.BlankNode) {
-        for (const descriptionPredicate of this.descriptionPredicates) {
-            for (const description of this.anyStatementsMatching(entity, descriptionPredicate, null)) {
-                return description.object.value;
+            for (const descriptionPredicate of this.descriptionPredicates) {
+                for (const description of this.anyStatementsMatching(entity, descriptionPredicate, null)) {
+                    return description.object.value;
+                }
             }
         }
-    }
         return null;
 
         // TODO: consider handling case where no description is found 

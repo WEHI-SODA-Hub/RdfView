@@ -1,11 +1,11 @@
-import { Box, Container, Em, Flex, Text } from '@radix-ui/themes';
+import { Box, Container, Em, Flex, Text, Badge } from '@radix-ui/themes';
 import { Quad_Subject as Subject, Term } from "rdflib/lib/tf-types";
 import { ContentType } from "rdflib/lib/types";
 import React, { useEffect, useRef, useState } from 'react';
 import { OntologyStore } from "../Store";
 import EntityList from './EntityList';
 import PropertyTable from './PropertyTable';
-import { BlankNode, NamedNode } from 'rdflib';
+import { BlankNode, NamedNode, Statement } from 'rdflib';
 
 /**
  * Represents an RDF input
@@ -22,7 +22,7 @@ export type RdfViewerProps = {
     dataSources: RdfSource[];
     /**
      * Zero or more RDF ontology sources to load. Entities are not displayed directly but only used for getting labels and descriptions
-     */ 
+     */
     ontologySources: RdfSource[];
     /**
      * Base URI to use when loading RDF data and ontologies
@@ -32,29 +32,52 @@ export type RdfViewerProps = {
     /**
      * Custom content to display when an entity has no label.
      */
-    missingLabel: React.ReactNode | null;
+    missingLabel?: React.ReactNode;
 
     /**
      * Custom content to display when an entity has no description.
      */
-    missingDescription: React.ReactNode | null;
+    missingDescription?: React.ReactNode;
+
+    /**
+     * If provided, prefer types that start with this prefix when displaying entity types.
+     */
+    preferredPrefix?: string;
+
+    /**
+     * Optional function to skip certain statements from being displayed in the property table. 
+     */
+    skipStatement?: (statement: Statement, store: OntologyStore) => boolean;
 }
 
 /**
  * Re-usable component for viewing RDF data.
  */
-export const RdfViewer: React.FC<RdfViewerProps> = ({ dataSources, ontologySources, baseUri, missingLabel, missingDescription }) => {
+export const RdfViewer: React.FC<RdfViewerProps> = ({ dataSources, ontologySources, baseUri, missingLabel, missingDescription, preferredPrefix, skipStatement }) => {
     const ontologyStore = useRef<OntologyStore>(new OntologyStore());
 
     function nameFor(entity: Term): React.ReactNode {
         const name = ontologyStore.current.entityName(entity);
-        if (name) {
-            return <Text>{name}</Text>;
-        } else if (missingLabel) {
-            return missingLabel;
-        } else {
-            return <Text><Em>Unnamed Entity</Em></Text>;
+        let types: string[] = [];
+        if (entity instanceof NamedNode || entity instanceof BlankNode) {
+            types = [...ontologyStore.current.displayTypes(entity, preferredPrefix)];
         }
+
+        let content;
+        if (name) {
+            content = name;
+        } else if (missingLabel) {
+            content = missingLabel;
+        } else {
+            content = <span style={{ fontVariant: "small-caps" }}>Unnamed entity</span>;
+        }
+
+        return <div>
+            <Flex gap="2">
+                {types.map((type) => <Badge key={type}>{type}</Badge>)}
+            </Flex>
+            <Text>{content}</Text>
+        </div>
     }
 
     function descriptionFor(entity: Term): React.ReactNode {
@@ -103,6 +126,7 @@ export const RdfViewer: React.FC<RdfViewerProps> = ({ dataSources, ontologySourc
         </Flex>);
     }
     else {
+        const statements = ontologyStore.current.anyStatementsMatching(selectedEntity, null, null).filter(statement => !skipStatement || !skipStatement(statement, ontologyStore.current));
         content = (<Flex gap="4">
             <Box className="entity-list" style={{ width: '300px', borderRight: '1px solid var(--gray-6)', overflowY: 'auto' }}>
                 <EntityList
@@ -121,11 +145,11 @@ export const RdfViewer: React.FC<RdfViewerProps> = ({ dataSources, ontologySourc
                     descriptionFor={descriptionFor}
                     hasStatements={(predicate) => {
                         if (predicate instanceof NamedNode || predicate instanceof BlankNode) {
-                            return ontologyStore.current.anyStatementsMatching(predicate, null, null).length > 0;
+                            return ontologyStore.current.anyStatementsMatching(predicate, null, null).filter(statement => !skipStatement || !skipStatement(statement, ontologyStore.current)).length > 0;
                         }
                         return false;
                     }}
-                    statements={ontologyStore.current.anyStatementsMatching(selectedEntity, null, null)}
+                    statements={statements}
                 />
             </Box>
         </Flex>

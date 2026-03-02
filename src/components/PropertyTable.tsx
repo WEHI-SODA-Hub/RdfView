@@ -4,8 +4,6 @@ import * as RDF from 'rdflib';
 import { Quad_Subject as Subject, Term } from 'rdflib/lib/tf-types';
 import React from 'react';
 
-// Import RDFS namespace
-
 interface PropertyTableProps {
   /**
    * The entity currently being displayed

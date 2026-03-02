@@ -15,7 +15,9 @@ const App: React.FC = () => {
     Upload RDF ontologies:
     <RdfUpload onUpload={(source) => setOntologySources(prev => [...prev, source])}></RdfUpload>
 
-    <RdfViewer dataSources={dataSources} ontologySources={ontologySources} baseUri="http://example.org/"></RdfViewer>
+    <RdfViewer dataSources={dataSources} ontologySources={ontologySources} baseUri="http://example.org/" skipStatement={(statement, store) => 
+      !store.entityName(statement.predicate) || !store.entityName(statement.object)
+    }></RdfViewer>
     </Container>
   )
 };
