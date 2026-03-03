@@ -69,10 +69,15 @@ export const RdfViewer: React.FC<RdfViewerProps> = ({ dataSources, ontologySourc
     // Entity that was clicked in the TOC and should be scrolled into view
     const [shouldScrollIntoView, setShouldScrollIntoView] = useState<Subject | null>(null);
 
-    function nameFor(entity: Term): React.ReactNode {
+    /**
+     * Generates a display name for an entity using the ontology store.
+     * @param context The context in which the name is being displayed. "sidebar" is the list of entities on the left, "subject" is the title of an entity in the main view, and "object" is when the entity is displayed as an object in the property table.
+     * @returns 
+     */
+    function nameFor(entity: Term, context : "sidebar" | "subject" | "object"): React.ReactNode {
         const name = ontologyStore.current.entityName(entity);
         let types: string[] = [];
-        if (entity instanceof NamedNode || entity instanceof BlankNode) {
+        if ((entity instanceof NamedNode || entity instanceof BlankNode) && context === "sidebar") {
             types = [...ontologyStore.current.displayTypes(entity, preferredPrefix)];
         }
 
@@ -144,7 +149,7 @@ export const RdfViewer: React.FC<RdfViewerProps> = ({ dataSources, ontologySourc
                     visibleEntity={shouldHighlight}
                     onEntitySelect={(entity) => { setShouldScrollIntoView(entity) }}
                     descriptionFor={descriptionFor}
-                    nameFor={nameFor}
+                    nameFor={(entity) => nameFor(entity, "sidebar")}
                     entities={subjects}
                 />
             </Box>
@@ -153,7 +158,7 @@ export const RdfViewer: React.FC<RdfViewerProps> = ({ dataSources, ontologySourc
                     subjects={subjects}
                     ontologyStore={ontologyStore.current}
                     skipStatement={skipStatement}
-                    nameFor={nameFor}
+                    nameFor={(entity) => nameFor(entity, "subject")}
                     descriptionFor={descriptionFor}
                     setVisibleEntity={(entity) => { setShouldHighlight(entity) }}
                     visibleEntity={shouldScrollIntoView}
