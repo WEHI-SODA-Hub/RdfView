@@ -160,8 +160,9 @@ export const RdfViewer: React.FC<RdfViewerProps> = ({ dataSources, ontologySourc
                     skipStatement={skipStatement}
                     nameFor={(entity) => nameFor(entity, "subject")}
                     descriptionFor={descriptionFor}
-                    setVisibleEntity={(entity) => { setShouldHighlight(entity) }}
+                    onEntityBecomesVisible={(entity) => { setShouldHighlight(entity) }}
                     visibleEntity={shouldScrollIntoView}
+                    onEntityLink={entity => setShouldScrollIntoView(entity)}
                 />
             </Box>
         </Flex>
@@ -184,9 +185,12 @@ const PropertyTableList: React.FC<{
     skipStatement?: (statement: Statement, store: OntologyStore) => boolean,
     nameFor: (entity: Term) => React.ReactNode,
     descriptionFor: (entity: Term) => React.ReactNode,
-    setVisibleEntity: (entity: Subject) => void,
+    // Called when an entity becomes visible in the main view (i.e. when it is scrolled into view).
+    onEntityBecomesVisible: (entity: Subject) => void,
+    // Called when an entity is clicked in the property table (i.e. when an entity is linked from another entity's properties)
+    onEntityLink: (entity: Subject) => void,
     visibleEntity: Subject | null
-}> = ({ subjects, ontologyStore, skipStatement, nameFor, descriptionFor, setVisibleEntity, visibleEntity }) => {
+}> = ({ subjects, ontologyStore, skipStatement, nameFor, descriptionFor, onEntityBecomesVisible, visibleEntity, onEntityLink }) => {
     const visibleEntityRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -205,19 +209,22 @@ const PropertyTableList: React.FC<{
                 return (
                     <InView onChange={(inView, entry) => {
                         if (inView) {
-                            setVisibleEntity(subject)
+                            onEntityBecomesVisible(subject)
                         }
                     }} key={subject.value}>
                         <PropertyTable
                             id={encodeURIComponent(subject.value)}
                             ref={visibleEntity?.value === subject.value ? visibleEntityRef : null}
                             subject={subject}
-                            onEntityClick={(entity) => { }}
+                            onEntityClick={(entity) => { 
+                                onEntityLink(entity); 
+                             }}
                             nameFor={nameFor}
                             descriptionFor={descriptionFor}
-                            hasStatements={(predicate) => {
-                                if (predicate instanceof NamedNode || predicate instanceof BlankNode) {
-                                    return ontologyStore.anyStatementsMatching(predicate, null, null).filter(statement => !skipStatement || !skipStatement(statement, ontologyStore)).length > 0;
+                            hasStatements={(term) => {
+                                if (term instanceof NamedNode || term instanceof BlankNode) {
+                                    // Only use data store here, because the ontology store contains mostly classes and properties that won't be in the entity list
+                                    return ontologyStore.data.statementsMatching(term, null, null).filter(statement => !skipStatement || !skipStatement(statement, ontologyStore)).length > 0;
                                 }
                                 return false;
                             }}
