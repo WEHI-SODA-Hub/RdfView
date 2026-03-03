@@ -1,5 +1,5 @@
 import * as RDF from 'rdflib';
-import { type ContentType } from "rdflib/lib/types.js";
+import { type ContentType, SubjectType } from "rdflib/lib/types.js";
 
 /**
  * Promisified version of RDF.parse
@@ -41,3 +41,7 @@ export const EXTENSION_TO_CONTENT_TYPE: Record<string, ContentType> = {
     ".jsonld": "application/ld+json",
     ".json": "application/ld+json",
 };
+
+export function subjectToId(subject: SubjectType): string {
+    return encodeURIComponent(subject.value);
+}

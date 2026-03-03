@@ -1,4 +1,4 @@
-import { Box, Container, Em, Flex, Text, Badge } from '@radix-ui/themes';
+import { Box, Container, Em, Flex, Text, Badge, ScrollArea } from '@radix-ui/themes';
 import { Quad_Subject as Subject, Term } from "rdflib/lib/tf-types";
 import { ContentType } from "rdflib/lib/types";
 import React, { useEffect, useRef, useState } from 'react';
@@ -6,6 +6,8 @@ import { OntologyStore } from "../Store";
 import EntityList from './EntityList';
 import PropertyTable from './PropertyTable';
 import { BlankNode, NamedNode, Statement } from 'rdflib';
+import { InView } from "react-intersection-observer";
+import scrollIntoView from 'smooth-scroll-into-view-if-needed'
 
 /**
  * Represents an RDF input
@@ -55,6 +57,17 @@ export type RdfViewerProps = {
  */
 export const RdfViewer: React.FC<RdfViewerProps> = ({ dataSources, ontologySources, baseUri, missingLabel, missingDescription, preferredPrefix, skipStatement }) => {
     const ontologyStore = useRef<OntologyStore>(new OntologyStore());
+    // dummy state to trigger re-renders
+    const [_, setStoreVersion] = useState(0);
+    // const [selectedEntity, setSelectedEntity] = useState<Subject | null>(null);
+    const [loading, setLoading] = useState<boolean>(true);
+
+    // These two state variables used to be the same, but separating them avoids loops where scrolling triggers more scrolling etc.
+
+    // Content that has been scrolled into view and should be highlighted in the TOC
+    const [shouldHighlight, setShouldHighlight] = useState<Subject | null>(null);
+    // Entity that was clicked in the TOC and should be scrolled into view
+    const [shouldScrollIntoView, setShouldScrollIntoView] = useState<Subject | null>(null);
 
     function nameFor(entity: Term): React.ReactNode {
         const name = ontologyStore.current.entityName(entity);
@@ -91,11 +104,7 @@ export const RdfViewer: React.FC<RdfViewerProps> = ({ dataSources, ontologySourc
         }
     }
 
-    // dummy state to trigger re-renders
-    const [_, setStoreVersion] = useState(0);
-    const [selectedEntity, setSelectedEntity] = useState<Subject | null>(null);
-    const [loading, setLoading] = useState<boolean>(true);
-
+    // Load data sources and ontologies when they change
     useEffect(() => {
         Promise.all([
             ...dataSources.map(source => ontologyStore.current.addData(source.content, baseUri, source.contentType))
@@ -126,30 +135,28 @@ export const RdfViewer: React.FC<RdfViewerProps> = ({ dataSources, ontologySourc
         </Flex>);
     }
     else {
-        const statements = ontologyStore.current.anyStatementsMatching(selectedEntity, null, null).filter(statement => !skipStatement || !skipStatement(statement, ontologyStore.current));
+        const subjects = [... new Set(ontologyStore.current.getSubjects())];
         content = (<Flex gap="4">
-            <Box className="entity-list" style={{ width: '300px', borderRight: '1px solid var(--gray-6)', overflowY: 'auto' }}>
+            <Box className="entity-list" flexGrow="1" style={{
+                // width: '300px', borderRight: '1px solid var(--gray-6)', overflowY: 'auto'
+            }}>
                 <EntityList
-                    selectedEntity={selectedEntity}
-                    onEntitySelect={(entity) => setSelectedEntity(entity)}
+                    visibleEntity={shouldHighlight}
+                    onEntitySelect={(entity) => { setShouldScrollIntoView(entity) }}
                     descriptionFor={descriptionFor}
                     nameFor={nameFor}
-                    entities={[... new Set(ontologyStore.current.getSubjects())]}
+                    entities={subjects}
                 />
             </Box>
-            <Box style={{ flex: 1, overflowY: 'auto' }}>
-                <PropertyTable
-                    subject={selectedEntity}
-                    onEntityClick={(entity) => setSelectedEntity(entity)}
+            <Box flexGrow="2" style={{ overflowY: 'auto' }}>
+                <PropertyTableList
+                    subjects={subjects}
+                    ontologyStore={ontologyStore.current}
+                    skipStatement={skipStatement}
                     nameFor={nameFor}
                     descriptionFor={descriptionFor}
-                    hasStatements={(predicate) => {
-                        if (predicate instanceof NamedNode || predicate instanceof BlankNode) {
-                            return ontologyStore.current.anyStatementsMatching(predicate, null, null).filter(statement => !skipStatement || !skipStatement(statement, ontologyStore.current)).length > 0;
-                        }
-                        return false;
-                    }}
-                    statements={statements}
+                    setVisibleEntity={(entity) => { setShouldHighlight(entity) }}
+                    visibleEntity={shouldScrollIntoView}
                 />
             </Box>
         </Flex>
@@ -162,5 +169,60 @@ export const RdfViewer: React.FC<RdfViewerProps> = ({ dataSources, ontologySourc
                 {content}
             </Box>
         </Container>
+    )
+}
+
+
+const PropertyTableList: React.FC<{
+    subjects: Subject[],
+    ontologyStore: OntologyStore,
+    skipStatement?: (statement: Statement, store: OntologyStore) => boolean,
+    nameFor: (entity: Term) => React.ReactNode,
+    descriptionFor: (entity: Term) => React.ReactNode,
+    setVisibleEntity: (entity: Subject) => void,
+    visibleEntity: Subject | null
+}> = ({ subjects, ontologyStore, skipStatement, nameFor, descriptionFor, setVisibleEntity, visibleEntity }) => {
+    const visibleEntityRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (visibleEntityRef.current) {
+            visibleEntityRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }, [visibleEntity, visibleEntityRef.current]);
+
+    return (
+
+        <ScrollArea type="auto" scrollbars="vertical" style={{
+            maxHeight: 'calc(100vh - 200px)'
+        }}>
+            {subjects.map(subject => {
+                const statements = ontologyStore.anyStatementsMatching(subject, null, null).filter(statement => !skipStatement || !skipStatement(statement, ontologyStore));
+                return (
+                    <InView onChange={(inView, entry) => {
+                        if (inView) {
+                            setVisibleEntity(subject)
+                        }
+                    }} key={subject.value}>
+                        <PropertyTable
+                            id={encodeURIComponent(subject.value)}
+                            ref={visibleEntity?.value === subject.value ? visibleEntityRef : null}
+                            subject={subject}
+                            onEntityClick={(entity) => { }}
+                            nameFor={nameFor}
+                            descriptionFor={descriptionFor}
+                            hasStatements={(predicate) => {
+                                if (predicate instanceof NamedNode || predicate instanceof BlankNode) {
+                                    return ontologyStore.anyStatementsMatching(predicate, null, null).filter(statement => !skipStatement || !skipStatement(statement, ontologyStore)).length > 0;
+                                }
+                                return false;
+                            }}
+                            statements={statements}
+                        />
+                    </InView>
+                )
+            }
+            )}
+
+        </ScrollArea>
     )
 }

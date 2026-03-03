@@ -30,6 +30,10 @@ interface PropertyTableProps {
    * This can be used to determine whether to make the predicate clickable (i.e. if it has statements about it, it can be clicked to view those statements).
    */
   hasStatements: (predicate: Term) => boolean;
+
+  ref?: React.Ref<HTMLDivElement>;
+
+  id?: string;
 }
 
 interface PropertyRow {
@@ -53,7 +57,9 @@ export const PropertyTable: React.FC<PropertyTableProps> = ({
   statements,
   nameFor,
   descriptionFor,
-  hasStatements
+  hasStatements,
+  id,
+  ref
 }) => {
   if (!subject) {
     return (
@@ -103,7 +109,7 @@ export const PropertyTable: React.FC<PropertyTableProps> = ({
 
   return (
     <Tooltip.Provider delayDuration={300}>
-      <Box p="4">
+      <Box p="4" ref={ref} id={id}>
 {subject !== null ? (
           <Tooltip.Root>
             <Tooltip.Trigger asChild>
