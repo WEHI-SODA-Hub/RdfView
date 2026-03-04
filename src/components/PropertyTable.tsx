@@ -1,132 +1,140 @@
-import React from 'react';
+import * as Tooltip from '@radix-ui/react-tooltip';
+import { Box, Heading, Link, Table, Text } from '@radix-ui/themes';
 import * as RDF from 'rdflib';
-import { NamedNode } from 'rdflib/lib/tf-types';
+import { Quad_Subject as Subject, Term } from 'rdflib/lib/tf-types';
+import { ObjectType, PredicateType } from 'rdflib/lib/types';
+import React from 'react';
 
 interface PropertyTableProps {
-  store: RDF.Store;
-  subject: NamedNode | null;
-  onEntityClick: (entity: NamedNode, updateHistory?: boolean) => void;
-  getEntityLabel: (entity: NamedNode) => string;
-  labelPredicates: NamedNode[];
+  /**
+   * The entity currently being displayed
+   */
+  subject: Subject | null;
+  /**
+   * Statements about that entity
+   */
+  statements: RDF.Statement[];
+  /**
+   * Gets the display name for an entity 
+   */
+  nameFor: (entity: Term) => React.ReactNode;
+  /**
+   * Gets a description for an entity 
+   */
+  descriptionFor: (entity: Term) => React.ReactNode;
+  /**
+   * Callback for when an entity is clicked 
+   */
+  onEntityClick: (entity: Subject, updateHistory?: boolean) => void;
+  /**
+   * True if this entity has statements about it. 
+   * This can be used to determine whether to make the predicate clickable (i.e. if it has statements about it, it can be clicked to view those statements).
+   */
+  hasStatements: (term: Term) => boolean;
+
+  ref?: React.Ref<HTMLDivElement>;
+
+  id?: string;
 }
 
 interface PropertyRow {
+  // Predicate name
   predicate: string;
-  predicateUri: string;
+  predicateUri: PredicateType;
+
+  // Object value (either entity label or literal value)
   object: string;
-  objectUri: string;
-  isEntity: boolean;
-  isPredicateClickable: boolean;
+  objectUri: ObjectType;
 }
 
-const PropertyTable: React.FC<PropertyTableProps> = ({
-  store,
+export const PropertyTable: React.FC<PropertyTableProps> = ({
   subject,
   onEntityClick,
-  getEntityLabel,
-  labelPredicates
+  statements,
+  nameFor,
+  descriptionFor,
+  hasStatements,
+  id,
+  ref
 }) => {
-  if (!subject || !store) {
-    return <div className="property-table">Select an entity to view its properties</div>;
+  if (!subject) {
+    return (
+      <Box p="4">
+        <Text>Select an entity to view its properties</Text>
+      </Box>
+    );
   }
 
-  // Get all properties for the selected entity
-  const statements = store.statementsMatching(subject, null, null, null);
-  
   // Convert to a format suitable for the table
   const data: PropertyRow[] = statements.map(statement => {
     const predicate = statement.predicate;
     const object = statement.object;
-    
+
     const isEntity = object.termType === 'NamedNode';
-    
-    // Check if predicate exists as a subject in the store
-    const isPredicateClickable = store.statementsMatching(predicate, null, null, null).length > 0;
-    
-    // Get predicate label
-    const predicateLabel = predicate.termType === 'NamedNode' 
-      ? getEntityLabel(predicate as NamedNode)
-      : predicate.value.split(/[/#]/).pop() || predicate.value;
-    
+
     return {
-      predicate: predicateLabel,
-      predicateUri: predicate.value,
-      object: object.value,
-      objectUri: object.value,
-      isEntity: isEntity,
-      isPredicateClickable: isPredicateClickable
-    };
+      predicate: nameFor(predicate),
+      predicateUri: predicate,
+      object: nameFor(object),
+      objectUri: object,
+    } as PropertyRow;
   });
 
   // Function to handle clicking on an entity reference
-  const handleEntityClick = (uri: string) => {
-    const entityNode = RDF.sym(uri);
-    onEntityClick(entityNode);
-  };
-
-  // Function to handle clicking on a predicate
-  const handlePredicateClick = (uri: string) => {
-    // Check if the predicate exists as a subject in the store
-    const predicateNode = RDF.sym(uri);
-    const statements = store.statementsMatching(predicateNode, null, null, null);
-    
-    // Only make it clickable if it exists as a subject in the store
-    if (statements.length > 0) {
-      onEntityClick(predicateNode);
+  const handleEntityClick = (uri: ObjectType) => {
+    if (uri instanceof RDF.NamedNode || uri instanceof RDF.BlankNode) {
+      onEntityClick(uri);
     }
   };
 
+
+  // Function to handle clicking on a predicate
+  // const handlePredicateClick = (uri: PredicateType) => {
+  //   // Only make it clickable if it exists as a subject in the store
+  //   if (hasStatements(predicateNode)) {
+  //     onEntityClick(predicateNode);
+  //   }
+  // };
+
+  const description = descriptionFor(subject);
+
   return (
-    <div className="property-table">
-      <h2>Properties of {getEntityLabel(subject)}</h2>
-      <p><small>{subject.value}</small></p>
-      
+    <Box p="4" ref={ref} id={id}>
+      <Heading as="h2" size="5" mb="2">{nameFor(subject)}</Heading>
+
       {data.length === 0 ? (
-        <p>No properties found for this entity</p>
+        <Text>No properties found for this entity</Text>
       ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr>
-              <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #ddd' }}>Property</th>
-              <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid #ddd' }}>Value</th>
-            </tr>
-          </thead>
-          <tbody>
+        <Table.Root variant="surface">
+          <Table.Header>
+            <Table.Row>
+              <Table.ColumnHeaderCell>Property</Table.ColumnHeaderCell>
+              <Table.ColumnHeaderCell>Value</Table.ColumnHeaderCell>
+            </Table.Row>
+          </Table.Header>
+          <Table.Body>
             {data.map((row, index) => (
-              <tr key={index}>
-                <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>
-                  {row.isPredicateClickable ? (
-                    <div>
-                      <span
-                        className="property-link"
-                        onClick={() => handlePredicateClick(row.predicateUri)}
-                      >
-                        {row.predicate}
-                      </span>
-                    </div>
+              <Table.Row key={index}>
+                <Table.Cell>
+                  <Text>{row.predicate}</Text>
+                </Table.Cell>
+                <Table.Cell>
+                  {hasStatements(row.objectUri) ? (
+                    <Link onClick={() => handleEntityClick(row.objectUri)} style={{
+                      cursor: 'pointer'
+                    }}>
+                      {nameFor(row.objectUri)}
+                    </Link>
                   ) : (
-                    <div>{row.predicate}</div>
+                    <Text>{row.object}</Text>
                   )}
-                  <div><small>{row.predicateUri}</small></div>
-                </td>
-                <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>
-                  {row.isEntity ? (
-                    <span 
-                      className="property-link"
-                      onClick={() => handleEntityClick(row.objectUri)}
-                    >
-                      {getEntityLabel(RDF.sym(row.objectUri))}
-                    </span>
-                  ) : (
-                    row.object
-                  )}
-                </td>
-              </tr>
+                </Table.Cell>
+              </Table.Row>
             ))}
-          </tbody>
-        </table>
+          </Table.Body>
+        </Table.Root>
       )}
-    </div>
+    </Box>
   );
 };
 

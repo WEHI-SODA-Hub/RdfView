@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "allowImportingTsExtensions": true,
+    "target": "es2020",
+    "module": "node20",
+    "moduleResolution": "node16",
+    "lib": ["es2020"],
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true
+  },
+  "include": [
+    "./**/*.ts",
+    "../src/rdfLibUtils.ts",
+    "../src/RDFS.ts"
+  ]
+}
