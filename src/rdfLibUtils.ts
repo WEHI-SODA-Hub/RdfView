@@ -1,5 +1,11 @@
 import * as RDF from 'rdflib';
-import { type ContentType, SubjectType } from "rdflib/lib/types.js";
+import { NamedNode, BlankNode, Literal } from '@rdfjs/types';
+import { ContentType } from 'rdflib/lib/types';
+
+// Triple-specific types that exclude `Variable` and `DefaultGraph`, which are not relevant for our use case
+export type Subject = NamedNode | BlankNode;
+export type Object = NamedNode | BlankNode | Literal;
+export type Predicate = NamedNode | BlankNode;
 
 /**
  * Promisified version of RDF.parse
@@ -41,7 +47,3 @@ export const EXTENSION_TO_CONTENT_TYPE: Record<string, ContentType> = {
     ".jsonld": "application/ld+json",
     ".json": "application/ld+json",
 };
-
-export function subjectToId(subject: SubjectType): string {
-    return encodeURIComponent(subject.value);
-}
