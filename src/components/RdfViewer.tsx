@@ -1,13 +1,12 @@
-import { Box, Container, Em, Flex, Text, Badge, ScrollArea } from '@radix-ui/themes';
-import { Quad_Subject as Subject, Term } from "rdflib/lib/tf-types";
+import { Box, Container, Flex, Text, Badge, ScrollArea } from '@radix-ui/themes';
 import { ContentType } from "rdflib/lib/types";
 import React, { useEffect, useRef, useState } from 'react';
 import { OntologyStore } from "../Store";
 import EntityList from './EntityList';
 import PropertyTable from './PropertyTable';
-import { BlankNode, NamedNode, Statement } from 'rdflib';
+import {  Statement } from 'rdflib';
 import { InView } from "react-intersection-observer";
-import scrollIntoView from 'smooth-scroll-into-view-if-needed'
+import { Subject, Object } from '../rdfLibUtils';
 
 /**
  * Represents an RDF input
@@ -74,10 +73,10 @@ export const RdfViewer: React.FC<RdfViewerProps> = ({ dataSources, ontologySourc
      * @param context The context in which the name is being displayed. "sidebar" is the list of entities on the left, "subject" is the title of an entity in the main view, and "object" is when the entity is displayed as an object in the property table.
      * @returns 
      */
-    function nameFor(entity: Term, context : "sidebar" | "subject" | "object"): React.ReactNode {
+    function nameFor(entity: Object, context : "sidebar" | "subject" | "object"): React.ReactNode {
         const name = ontologyStore.current.entityName(entity);
         let types: string[] = [];
-        if ((entity instanceof NamedNode || entity instanceof BlankNode) && context === "sidebar") {
+        if ((entity.termType === "NamedNode" || entity.termType === "BlankNode") && context === "sidebar") {
             types = [...ontologyStore.current.displayTypes(entity, preferredPrefix)];
         }
 
@@ -98,7 +97,7 @@ export const RdfViewer: React.FC<RdfViewerProps> = ({ dataSources, ontologySourc
         </div>
     }
 
-    function descriptionFor(entity: Term): React.ReactNode {
+    function descriptionFor(entity: Object): React.ReactNode {
         const description = ontologyStore.current.entityDescription(entity);
         if (description) {
             return <Text>{description}</Text>;
@@ -183,8 +182,8 @@ const PropertyTableList: React.FC<{
     subjects: Subject[],
     ontologyStore: OntologyStore,
     skipStatement?: (statement: Statement, store: OntologyStore) => boolean,
-    nameFor: (entity: Term) => React.ReactNode,
-    descriptionFor: (entity: Term) => React.ReactNode,
+    nameFor: (entity: Object) => React.ReactNode,
+    descriptionFor: (entity: Object) => React.ReactNode,
     // Called when an entity becomes visible in the main view (i.e. when it is scrolled into view).
     onEntityBecomesVisible: (entity: Subject) => void,
     // Called when an entity is clicked in the property table (i.e. when an entity is linked from another entity's properties)
@@ -222,7 +221,7 @@ const PropertyTableList: React.FC<{
                             nameFor={nameFor}
                             descriptionFor={descriptionFor}
                             hasStatements={(term) => {
-                                if (term instanceof NamedNode || term instanceof BlankNode) {
+                                if (term.termType === 'NamedNode' || term.termType === 'BlankNode') {
                                     // Only use data store here, because the ontology store contains mostly classes and properties that won't be in the entity list
                                     return ontologyStore.data.statementsMatching(term, null, null).filter(statement => !skipStatement || !skipStatement(statement, ontologyStore)).length > 0;
                                 }

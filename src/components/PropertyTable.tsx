@@ -1,8 +1,6 @@
-import * as Tooltip from '@radix-ui/react-tooltip';
 import { Box, Heading, Link, Table, Text } from '@radix-ui/themes';
 import * as RDF from 'rdflib';
-import { Quad_Subject as Subject, Term } from 'rdflib/lib/tf-types';
-import { ObjectType, PredicateType } from 'rdflib/lib/types';
+import { Object, Subject, Predicate } from "../rdfLibUtils";
 import React from 'react';
 
 interface PropertyTableProps {
@@ -17,11 +15,11 @@ interface PropertyTableProps {
   /**
    * Gets the display name for an entity 
    */
-  nameFor: (entity: Term) => React.ReactNode;
+  nameFor: (entity: Object) => React.ReactNode;
   /**
    * Gets a description for an entity 
    */
-  descriptionFor: (entity: Term) => React.ReactNode;
+  descriptionFor: (entity: Object) => React.ReactNode;
   /**
    * Callback for when an entity is clicked 
    */
@@ -30,7 +28,7 @@ interface PropertyTableProps {
    * True if this entity has statements about it. 
    * This can be used to determine whether to make the predicate clickable (i.e. if it has statements about it, it can be clicked to view those statements).
    */
-  hasStatements: (term: Term) => boolean;
+  hasStatements: (term: Object) => boolean;
 
   ref?: React.Ref<HTMLDivElement>;
 
@@ -40,11 +38,11 @@ interface PropertyTableProps {
 interface PropertyRow {
   // Predicate name
   predicate: string;
-  predicateUri: PredicateType;
+  predicateUri: Predicate;
 
   // Object value (either entity label or literal value)
   object: string;
-  objectUri: ObjectType;
+  objectUri: Object;
 }
 
 export const PropertyTable: React.FC<PropertyTableProps> = ({
@@ -70,7 +68,13 @@ export const PropertyTable: React.FC<PropertyTableProps> = ({
     const predicate = statement.predicate;
     const object = statement.object;
 
-    const isEntity = object.termType === 'NamedNode';
+    if (!(predicate.termType === "NamedNode")) {
+      throw new Error("Variables are not supported in the property table");
+    }
+
+    if (!(object.termType === "NamedNode" || object.termType === "BlankNode" || object.termType === "Literal")) {
+      throw new Error("Only NamedNode, BlankNode and Literal are supported as objects in the property table");
+    }
 
     return {
       predicate: nameFor(predicate),
@@ -81,8 +85,8 @@ export const PropertyTable: React.FC<PropertyTableProps> = ({
   });
 
   // Function to handle clicking on an entity reference
-  const handleEntityClick = (uri: ObjectType) => {
-    if (uri instanceof RDF.NamedNode || uri instanceof RDF.BlankNode) {
+  const handleEntityClick = (uri: Object) => {
+    if (uri.termType === 'NamedNode' || uri.termType === 'BlankNode') {
       onEntityClick(uri);
     }
   };
