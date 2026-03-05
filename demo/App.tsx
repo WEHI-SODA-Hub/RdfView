@@ -16,7 +16,7 @@ const App: React.FC = () => {
     <RdfUpload onUpload={(source) => setOntologySources(prev => [...prev, source])}></RdfUpload>
 
     <RdfViewer dataSources={dataSources} ontologySources={ontologySources} baseUri="http://example.org/" skipStatement={(statement, store) => 
-      !store.entityName(statement.predicate) || !store.entityName(statement.object)
+      statement.object.termType == "Variable" || statement.object.termType == "Collection" || statement.object.termType == "Empty" || !store.entityName(statement.predicate) || !store.entityName(statement.object)
     }></RdfViewer>
     </Container>
   )

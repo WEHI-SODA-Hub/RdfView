@@ -1,6 +1,6 @@
 import { Box, Heading, ScrollArea, Text } from '@radix-ui/themes';
-import { Quad_Subject as Subject } from 'rdflib/lib/tf-types';
 import React, { useEffect } from 'react';
+import { Subject, Predicate } from '../rdfLibUtils';
 
 
 interface EntityListProps {

@@ -1,7 +1,9 @@
 import * as RDF from 'rdflib';
 import { subPropertyOf, label, comment } from './RDFS';
-import { NamedNode, Quad_Subject as Subject, Term } from 'rdflib/lib/tf-types';
+// These are the standard RDF/JS interface types, and unlike rdflib's types, they are publicly exported
+import type {BlankNode, NamedNode, Term} from "@rdfjs/types"
 import { parseRdf } from './rdfLibUtils';
+import { Subject } from './rdfLibUtils';
 
 /**
  * Triple Store that keeps two stores: one for the main RDF data and one for the ontology.
@@ -62,7 +64,7 @@ export class OntologyStore {
         });
     }
 
-    anyStatementsMatching(subject: Subject | null, predicate: NamedNode | null, object: Term | null): RDF.Statement[] {
+    anyStatementsMatching(subject: NamedNode | BlankNode | null, predicate: NamedNode | null, object: Term | null): RDF.Statement[] {
         return [...this.data.statementsMatching(subject, predicate, object, null), ...this.ontology.statementsMatching(subject, predicate, object, null)];
     }
 
@@ -90,7 +92,7 @@ export class OntologyStore {
     /**
      *  Yields all types for a given entity, looking in both the data and ontology stores. 
      */
-    *iterTypes(entity: NamedNode | RDF.BlankNode): Generator<NamedNode> {
+    *iterTypes(entity: NamedNode | BlankNode): Generator<NamedNode> {
         for (const typeStatement of this.anyStatementsMatching(entity, RDF.namedNode('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'), null)) {
             if (typeStatement.object instanceof RDF.NamedNode) {
                 yield typeStatement.object;
@@ -102,7 +104,7 @@ export class OntologyStore {
      * Yields display-friendly types for a given entity 
      * @param preferredPrefix Optionally, a prefix to filter types by
      */
-    *displayTypes(entity: NamedNode | RDF.BlankNode, preferredPrefix: string | null = null): Generator<string> {
+    *displayTypes(entity: NamedNode | BlankNode, preferredPrefix: string | null = null): Generator<string> {
         for (const type of this.iterTypes(entity)) {
             // Skip types that don't match the preferred prefix, if provided.
             if (preferredPrefix && !type.value.startsWith(preferredPrefix)) {

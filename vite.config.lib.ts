@@ -1,0 +1,42 @@
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import dts from 'vite-plugin-dts';
+import path from 'path';
+
+export default defineConfig({
+  plugins: [
+    react(),
+    dts({
+      include: ['src'],
+      rollupTypes: true,
+    }),
+  ],
+  publicDir: false,
+  build: {
+    lib: {
+      entry: path.resolve(__dirname, 'src/index.ts'),
+      formats: ['es'],
+      fileName: 'index',
+    },
+    outDir: path.resolve(__dirname, 'dist'),
+    emptyOutDir: true,
+    rollupOptions: {
+      external: [
+        'react',
+        'react-dom',
+        'react/jsx-runtime',
+        'rdflib',
+        /^rdflib\//,
+        /^@radix-ui\//,
+        'react-intersection-observer',
+        'smooth-scroll-into-view-if-needed',
+      ],
+      output: {
+        globals: {
+          react: 'React',
+          'react-dom': 'ReactDOM',
+        },
+      },
+    },
+  },
+});
