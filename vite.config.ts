@@ -4,6 +4,7 @@ import path from 'path';
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  base: "https://wehi-soda-hub.github.io/RdfView/",
   root: path.resolve(__dirname, 'demo'),
   publicDir: path.resolve(__dirname, 'public'),
   plugins: [react()],
