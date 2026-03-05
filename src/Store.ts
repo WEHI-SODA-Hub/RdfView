@@ -1,9 +1,9 @@
-import RDF from 'rdflib';
+import * as RDF from 'rdflib';
 import { subPropertyOf, label, comment } from './RDFS';
 // These are the standard RDF/JS interface types, and unlike rdflib's types, they are publicly exported
 import type {BlankNode, NamedNode, Term} from "@rdfjs/types"
 import { parseRdf } from './rdfLibUtils';
-import { Object, Subject } from './rdfLibUtils';
+import { Subject } from './rdfLibUtils';
 
 /**
  * Triple Store that keeps two stores: one for the main RDF data and one for the ontology.

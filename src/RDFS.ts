@@ -1,7 +1,7 @@
 /**
  * RDFS namespace and common properties
  */
-import RDF from 'rdflib';
+import * as RDF from 'rdflib';
 
 export const RDFS = RDF.Namespace("http://www.w3.org/2000/01/rdf-schema#");
 export const subPropertyOf = RDFS('subPropertyOf');
