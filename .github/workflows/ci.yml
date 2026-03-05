@@ -1,17 +1,17 @@
-name: Publish to GitHub Packages
+name: CI
 
 on:
-  workflow_run:
-    workflows: ["CI"]
-    types: [completed]
+  push:
+    branches: [main]
+  pull_request:
+  release:
+    types: [published]
 
 permissions:
   contents: read
-  packages: write
 
 jobs:
-  publish:
-    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'release'
+  ci:
     runs-on: ubuntu-latest
 
     steps:
@@ -28,16 +28,15 @@ jobs:
         with:
           node-version: 20
           cache: 'pnpm'
-          registry-url: 'https://npm.pkg.github.com'
-          scope: '@wehi-soda-hub'
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Type Check
+        run: pnpm tsc --noEmit
+
       - name: Build Library
         run: pnpm build:lib
 
-      - name: Publish Package
-        run: pnpm publish --no-git-checks --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build Demo
+        run: pnpm build:demo
