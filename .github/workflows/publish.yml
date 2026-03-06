@@ -34,6 +34,13 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Set version from release tag
+        run: |
+          TAG="${{ github.event.workflow_run.head_branch }}"
+          VERSION="${TAG#v}"
+          echo "Publishing version $VERSION"
+          npm pkg set version="$VERSION"
+
       - name: Build Library
         run: pnpm build:lib
 

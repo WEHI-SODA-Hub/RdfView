@@ -1,6 +1,5 @@
 {
   "name": "@wehi-soda-hub/rdf-viewer",
-  "version": "1.2.0",
   "private": false,
   "type": "module",
   "publishConfig": {
