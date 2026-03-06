@@ -16,6 +16,6 @@
     "forceConsistentCasingInFileNames": true,
     "noImplicitAny": false
   },
-  "include": ["src", "demo", "vite.config.ts"],
+  "include": ["src", "demo", "vite.config.demo.ts"],
   "exclude": ["scripts"]
 }

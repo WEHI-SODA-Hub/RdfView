@@ -9,7 +9,7 @@ public/
 !package.json
 out.ttl
 ro-crate-metadata.json
-vite.config.ts
+vite.config.demo.ts
 vite.config.lib.ts
 tsconfig.json
 pnpm-lock.yaml
