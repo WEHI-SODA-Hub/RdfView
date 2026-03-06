@@ -13,17 +13,26 @@
     ".": {
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
+    },
+    "./filterRdfs": {
+      "import": "./dist-cli/filterRdfs.js",
+      "types": "./dist-cli/filterRdfs.d.ts"
     }
   },
+  "bin": {
+    "filter-rdfs": "./dist-cli/bin/filterRdfs.js"
+  },
   "files": [
-    "dist"
+    "dist",
+    "dist-cli"
   ],
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --config vite.config.demo.ts",
     "build:lib": "vite build --config vite.config.lib.ts",
-    "build:demo": "vite build",
-    "build": "pnpm build:lib && pnpm build:demo",
-    "preview": "vite preview",
+    "build:cli": "vite build --config vite.config.cli.ts",
+    "build:demo": "vite build --config vite.config.demo.ts",
+    "build": "pnpm build:lib && pnpm build:cli && pnpm build:demo",
+    "preview": "vite preview --config vite.config.demo.ts",
     "predeploy": "pnpm build:demo",
     "deploy": "gh-pages -d dist-demo"
   },

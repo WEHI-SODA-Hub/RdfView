@@ -1,7 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import dts from 'vite-plugin-dts';
-import path from 'path';
 
 export default defineConfig({
   plugins: [
@@ -14,11 +13,11 @@ export default defineConfig({
   publicDir: false,
   build: {
     lib: {
-      entry: path.resolve(__dirname, 'src/index.ts'),
+      entry: 'src/index.ts',
       formats: ['es'],
       fileName: 'index',
     },
-    outDir: path.resolve(__dirname, 'dist'),
+    outDir: 'dist',
     emptyOutDir: true,
     rollupOptions: {
       external: [
