@@ -40,3 +40,6 @@ jobs:
 
       - name: Build Demo
         run: pnpm build:demo
+
+      - name: Build CLI
+        run: pnpm build:cli
