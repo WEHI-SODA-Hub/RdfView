@@ -255,8 +255,8 @@ const PropertyTableList: React.FC<{
                             descriptionFor={descriptionFor}
                             canNavigateTo={(term) => {
                                 if (term.termType === 'NamedNode' || term.termType === 'BlankNode') {
-                                    // Only use the data store here, because the ontology store contains mostly classes and properties that won't be in the entity list.
-                                    // A referenced entity must also be visible to be navigable. Hidden entities remain in the complete store so their labels can still be displayed, but they have no property table to navigate to.
+                                    // Only use the data store here, because the ontology store contains mostly classes and properties that won't be in the entity list
+                                    // A referenced entity must also be visible to be navigable
                                     return visibleSubjectKeys.has(subjectKey(term)) && ontologyStore.data.statementsMatching(term, null, null).filter(statement => !skipStatement || !skipStatement(statement, ontologyStore)).length > 0;
                                 }
                                 return false;
