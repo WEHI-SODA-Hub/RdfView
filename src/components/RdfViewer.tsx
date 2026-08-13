@@ -157,8 +157,6 @@ export const RdfViewer: React.FC<RdfViewerProps> = ({ dataSources, ontologySourc
     else {
         // rdflib reuses the same term object for repeated subjects, so Set deduplicates them.
         const allSubjects = [...new Set(ontologyStore.current.getSubjects())];
-        // Filtering only controls presentation. Keep every entity in the store so
-        // filters and display-name lookups can still inspect the complete graph.
         const visibleSubjects = entityFilter
             ? allSubjects.filter(entity => entityFilter(entity, ontologyStore.current))
             : allSubjects;
