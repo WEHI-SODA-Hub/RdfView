@@ -38,7 +38,8 @@ export class OntologyStore {
     }
 
     /**
-     * Yields all subjects in the data store.
+     * Yields the subject of every statement in the data store.
+     * A subject may therefore be yielded more than once.
      */
     *getSubjects(): Generator<Subject> {
         for (const statement of this.data.statements) {

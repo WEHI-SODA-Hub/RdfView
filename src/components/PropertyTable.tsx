@@ -25,10 +25,9 @@ interface PropertyTableProps {
    */
   onEntityClick: (entity: Subject, updateHistory?: boolean) => void;
   /**
-   * True if this entity has statements about it. 
-   * This can be used to determine whether to make the predicate clickable (i.e. if it has statements about it, it can be clicked to view those statements).
+   * True when the referenced entity can be navigated to in the current view.
    */
-  hasStatements: (term: Object) => boolean;
+  canNavigateTo: (term: Object) => boolean;
 
   ref?: React.Ref<HTMLDivElement>;
 
@@ -51,7 +50,7 @@ export const PropertyTable: React.FC<PropertyTableProps> = ({
   statements,
   nameFor,
   descriptionFor,
-  hasStatements,
+  canNavigateTo,
   id,
   ref
 }) => {
@@ -123,7 +122,7 @@ export const PropertyTable: React.FC<PropertyTableProps> = ({
                   <Text>{row.predicate}</Text>
                 </Table.Cell>
                 <Table.Cell>
-                  {hasStatements(row.objectUri) ? (
+                  {canNavigateTo(row.objectUri) ? (
                     <Link onClick={() => handleEntityClick(row.objectUri)} style={{
                       cursor: 'pointer'
                     }}>
