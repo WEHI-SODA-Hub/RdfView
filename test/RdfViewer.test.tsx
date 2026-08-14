@@ -10,23 +10,18 @@ const SCHEMA_DESCRIPTION = 'https://schema.org/description';
 // Minimal self-contained JSON-LD graph with two linked subjects.
 const dataSources: RdfViewerProps['dataSources'] = [{
   content: JSON.stringify({
-    '@context': {
-      '@vocab': 'https://schema.org/',
-      creator: { '@id': 'https://schema.org/creator', '@type': '@id' },
-      name: 'https://schema.org/name',
-    },
     '@graph': [
       {
         '@id': './',
-        '@type': 'Dataset',
-        creator: { '@id': '#creator' },
-        description: 'Example description',
-        name: 'Example dataset',
+        '@type': 'https://schema.org/Dataset',
+        'https://schema.org/creator': { '@id': '#creator' },
+        'https://schema.org/description': 'Example description',
+        'https://schema.org/name': 'Example dataset',
       },
       {
         '@id': '#creator',
-        '@type': 'Person',
-        name: 'Example creator',
+        '@type': 'https://schema.org/Person',
+        'https://schema.org/name': 'Example creator',
       },
     ],
   }),

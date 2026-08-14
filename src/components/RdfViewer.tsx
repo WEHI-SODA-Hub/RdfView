@@ -168,9 +168,7 @@ export const RdfViewer: React.FC<RdfViewerProps> = ({ dataSources, ontologySourc
         }
         else {
             content = (<Flex gap="4">
-                {showEntityList && <Box className="entity-list" flexGrow="1" style={{
-                    // width: '300px', borderRight: '1px solid var(--gray-6)', overflowY: 'auto'
-                }}>
+                {showEntityList && <Box className="entity-list" flexGrow="1">
                     <EntityList
                         visibleEntity={shouldHighlight}
                         onEntitySelect={(entity) => { setShouldScrollIntoView(entity) }}
