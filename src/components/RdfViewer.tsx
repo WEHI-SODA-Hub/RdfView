@@ -16,7 +16,7 @@ export type RdfSource = {
     contentType: ContentType
 }
 
-// rdflib can produce extended term types that PropertyTable cannot render.
+// Exclude rdflib terms such as variables and collections that PropertyTable cannot render yet
 function isDisplayableStatement(statement: Statement): boolean {
     return statement.predicate.termType === "NamedNode" &&
         (statement.object.termType === "NamedNode" ||

@@ -38,12 +38,17 @@ export class OntologyStore {
     }
 
     /**
-     * Yields the subject of every statement in the data store.
+     * Yields named and blank node subjects from the data store.
      * A subject may therefore be yielded more than once.
      */
     *getSubjects(): Generator<Subject> {
         for (const statement of this.data.statements) {
-            yield statement.subject as Subject;
+            const subject = statement.subject;
+
+            // Other rdflib subject types cannot be displayed as entities yet
+            if (subject.termType === 'NamedNode' || subject.termType === 'BlankNode') {
+                yield subject;
+            }
         }
     }
 
