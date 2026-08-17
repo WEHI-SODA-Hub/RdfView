@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { OntologyStore } from "../Store";
 import EntityList from './EntityList';
 import PropertyTable from './PropertyTable';
-import {  Statement } from 'rdflib';
+import { Statement } from 'rdflib';
 import { InView } from "react-intersection-observer";
 import { Subject, Object } from '../rdfLibUtils';
 
@@ -14,6 +14,14 @@ import { Subject, Object } from '../rdfLibUtils';
 export type RdfSource = {
     content: string;
     contentType: ContentType
+}
+
+// rdflib can produce extended term types that PropertyTable cannot render.
+function isDisplayableStatement(statement: Statement): boolean {
+    return statement.predicate.termType === "NamedNode" &&
+        (statement.object.termType === "NamedNode" ||
+            statement.object.termType === "BlankNode" ||
+            statement.object.termType === "Literal");
 }
 
 export type RdfViewerProps = {
@@ -46,11 +54,6 @@ export type RdfViewerProps = {
     preferredPrefix?: string;
 
     /**
-     * Optional function to skip certain statements from being displayed in the property table. 
-     */
-    skipStatement?: (statement: Statement, store: OntologyStore) => boolean;
-
-    /**
      * Whether to display the entity list. Defaults to true.
      */
     showEntityList?: boolean;
@@ -59,7 +62,7 @@ export type RdfViewerProps = {
 /**
  * Re-usable component for viewing RDF data.
  */
-export const RdfViewer: React.FC<RdfViewerProps> = ({ dataSources, ontologySources, baseUri, missingLabel, missingDescription, preferredPrefix, skipStatement, showEntityList = true }) => {
+export const RdfViewer: React.FC<RdfViewerProps> = ({ dataSources, ontologySources, baseUri, missingLabel, missingDescription, preferredPrefix, showEntityList = true }) => {
     const ontologyStore = useRef<OntologyStore>(new OntologyStore());
     // dummy state to trigger re-renders
     const [_, setStoreVersion] = useState(0);
@@ -160,7 +163,6 @@ export const RdfViewer: React.FC<RdfViewerProps> = ({ dataSources, ontologySourc
                 <PropertyTableList
                     subjects={subjects}
                     ontologyStore={ontologyStore.current}
-                    skipStatement={skipStatement}
                     nameFor={(entity) => nameFor(entity, "subject")}
                     descriptionFor={descriptionFor}
                     onEntityBecomesVisible={(entity) => { setShouldHighlight(entity) }}
@@ -184,7 +186,6 @@ export const RdfViewer: React.FC<RdfViewerProps> = ({ dataSources, ontologySourc
 const PropertyTableList: React.FC<{
     subjects: Subject[],
     ontologyStore: OntologyStore,
-    skipStatement?: (statement: Statement, store: OntologyStore) => boolean,
     nameFor: (entity: Object) => React.ReactNode,
     descriptionFor: (entity: Object) => React.ReactNode,
     // Called when an entity becomes visible in the main view (i.e. when it is scrolled into view).
@@ -192,7 +193,7 @@ const PropertyTableList: React.FC<{
     // Called when an entity is clicked in the property table (i.e. when an entity is linked from another entity's properties)
     onEntityLink: (entity: Subject) => void,
     visibleEntity: Subject | null
-}> = ({ subjects, ontologyStore, skipStatement, nameFor, descriptionFor, onEntityBecomesVisible, visibleEntity, onEntityLink }) => {
+}> = ({ subjects, ontologyStore, nameFor, descriptionFor, onEntityBecomesVisible, visibleEntity, onEntityLink }) => {
     const visibleEntityRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -207,7 +208,7 @@ const PropertyTableList: React.FC<{
             maxHeight: 'calc(100vh - 200px)'
         }}>
             {subjects.map(subject => {
-                const statements = ontologyStore.anyStatementsMatching(subject, null, null).filter(statement => !skipStatement || !skipStatement(statement, ontologyStore));
+                const statements = ontologyStore.anyStatementsMatching(subject, null, null).filter(isDisplayableStatement);
                 return (
                     <InView onChange={(inView, entry) => {
                         if (inView) {
@@ -226,7 +227,7 @@ const PropertyTableList: React.FC<{
                             hasStatements={(term) => {
                                 if (term.termType === 'NamedNode' || term.termType === 'BlankNode') {
                                     // Only use the data store here, because the ontology store contains mostly classes and properties that won't be in the entity list
-                                    return ontologyStore.data.statementsMatching(term, null, null).filter(statement => !skipStatement || !skipStatement(statement, ontologyStore)).length > 0;
+                                    return ontologyStore.data.statementsMatching(term, null, null).some(isDisplayableStatement);
                                 }
                                 return false;
                             }}

@@ -34,9 +34,6 @@ const App: React.FC = () => {
         ontologySources={ontologySources}
         baseUri={BASE_URI}
         showEntityList={showEntityList}
-        skipStatement={(statement, store) =>
-          statement.object.termType == "Variable" || statement.object.termType == "Collection" || statement.object.termType == "Empty" || !store.entityName(statement.predicate) || !store.entityName(statement.object)
-        }
       />
     </Container>
   )

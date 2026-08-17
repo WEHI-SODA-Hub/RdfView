@@ -1,11 +1,8 @@
 import { cleanup, render, screen } from '@testing-library/react';
-import { Statement } from 'rdflib';
 import { afterEach, describe, expect, it } from 'vitest';
-import { OntologyStore } from '../src/Store';
 import { RdfViewer, RdfViewerProps } from '../src/components/RdfViewer';
 
 const BASE_URI = 'https://example.org/crate/';
-const SCHEMA_DESCRIPTION = 'https://schema.org/description';
 
 // Minimal self-contained JSON-LD graph with two linked subjects.
 const dataSources: RdfViewerProps['dataSources'] = [{
@@ -28,7 +25,23 @@ const dataSources: RdfViewerProps['dataSources'] = [{
   contentType: 'application/ld+json',
 }];
 
-// Minimal standard-vocabulary ontology used to give the graph readable labels.
+// rdflib parses JSON-LD @list values as Collection terms, which PropertyTable cannot render
+const collectionDataSources: RdfViewerProps['dataSources'] = [{
+  content: JSON.stringify({
+    '@graph': [
+      {
+        '@id': './',
+        'https://schema.org/keywords': {
+          '@list': ['one', 'two'],
+        },
+        'https://schema.org/name': 'Collection dataset',
+      },
+    ],
+  }),
+  contentType: 'application/ld+json',
+}];
+
+// Minimal standard-vocabulary ontology used to give the graph readable labels
 const ontologySources: RdfViewerProps['ontologySources'] = [{
   content: `
     @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
@@ -39,6 +52,7 @@ const ontologySources: RdfViewerProps['ontologySources'] = [{
     schema:name rdfs:label "name" ; rdfs:subPropertyOf rdfs:label .
     schema:creator rdfs:label "creator" .
     schema:description rdfs:label "description" .
+    schema:keywords rdfs:label "keywords" .
     schema:Dataset rdfs:label "Dataset" .
     schema:Person rdfs:label "Person" .
   `,
@@ -77,17 +91,11 @@ describe('RdfViewer display options', () => {
     expect(screen.queryByRole('heading', { name: 'Entities' })).not.toBeInTheDocument();
   });
 
-  it('skips statements selected by the statement filter', async () => {
-    const skipDescription = (statement: Statement, _store: OntologyStore) =>
-      statement.predicate.value === SCHEMA_DESCRIPTION;
+  it('ignores statements with object terms the property table cannot display', async () => {
+    renderViewer({ dataSources: collectionDataSources });
 
-    renderViewer({
-      skipStatement: skipDescription,
-    });
-
-    expect(await screen.findByRole('heading', { name: 'Example dataset' })).toBeInTheDocument();
-    expect(screen.queryByText('description')).not.toBeInTheDocument();
-    expect(screen.queryByText('Example description')).not.toBeInTheDocument();
-    expect(screen.getByText('creator')).toBeInTheDocument();
+    // Supported statements still render, while the unsupported collection statement is omitted
+    expect(await screen.findByRole('heading', { name: 'Collection dataset' })).toBeInTheDocument();
+    expect(screen.queryByText('keywords')).not.toBeInTheDocument();
   });
 });
