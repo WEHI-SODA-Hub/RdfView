@@ -8,7 +8,6 @@ const BASE_URI = 'http://example.org/';
 const App: React.FC = () => {
   const [dataSources, setDataSources] = useState<RdfSource[]>([]);
   const [ontologySources, setOntologySources] = useState<RdfSource[]>([]);
-  const [showOnlyBaseEntity, setShowOnlyBaseEntity] = useState(false);
   const [showEntityList, setShowEntityList] = useState(true);
 
   return (
@@ -23,15 +22,6 @@ const App: React.FC = () => {
         <label>
           <input
             type="checkbox"
-            checked={showOnlyBaseEntity}
-            onChange={(event) => setShowOnlyBaseEntity(event.target.checked)}
-          />
-          Show only the base URI entity
-        </label>
-
-        <label>
-          <input
-            type="checkbox"
             checked={showEntityList}
             onChange={(event) => setShowEntityList(event.target.checked)}
           />
@@ -43,9 +33,6 @@ const App: React.FC = () => {
         dataSources={dataSources}
         ontologySources={ontologySources}
         baseUri={BASE_URI}
-        entityFilter={showOnlyBaseEntity
-          ? (entity) => entity.termType === 'NamedNode' && entity.value === BASE_URI
-          : undefined}
         showEntityList={showEntityList}
         skipStatement={(statement, store) =>
           statement.object.termType == "Variable" || statement.object.termType == "Collection" || statement.object.termType == "Empty" || !store.entityName(statement.predicate) || !store.entityName(statement.object)

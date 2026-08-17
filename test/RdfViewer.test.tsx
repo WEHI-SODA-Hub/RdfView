@@ -1,8 +1,8 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import { Statement } from 'rdflib';
 import { afterEach, describe, expect, it } from 'vitest';
 import { OntologyStore } from '../src/Store';
-import { EntityFilter, RdfViewer, RdfViewerProps } from '../src/components/RdfViewer';
+import { RdfViewer, RdfViewerProps } from '../src/components/RdfViewer';
 
 const BASE_URI = 'https://example.org/crate/';
 const SCHEMA_DESCRIPTION = 'https://schema.org/description';
@@ -45,9 +45,6 @@ const ontologySources: RdfViewerProps['ontologySources'] = [{
   contentType: 'text/turtle',
 }];
 
-const rootSubjectFilter: EntityFilter = (subject) =>
-  subject.termType === 'NamedNode' && subject.value === BASE_URI;
-
 function renderViewer(props: Partial<RdfViewerProps> = {}) {
   return render(
     <RdfViewer
@@ -61,7 +58,7 @@ function renderViewer(props: Partial<RdfViewerProps> = {}) {
 
 afterEach(cleanup);
 
-describe('RdfViewer entity filtering', () => {
+describe('RdfViewer display options', () => {
   it('displays all entities and navigation by default', async () => {
     renderViewer();
 
@@ -72,17 +69,6 @@ describe('RdfViewer entity filtering', () => {
     expect(creatorRow.querySelector('a')).toBeInTheDocument();
   });
 
-  it('filters the resolved root entity and disables navigation to hidden entities', async () => {
-    renderViewer({ entityFilter: rootSubjectFilter });
-
-    expect(await screen.findByRole('heading', { name: 'Example dataset' })).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'Example creator' })).not.toBeInTheDocument();
-
-    const hiddenEntityLabel = screen.getByText('Example creator');
-    expect(hiddenEntityLabel).toBeInTheDocument();
-    expect(hiddenEntityLabel.closest('a')).toBeNull();
-  });
-
   it('hides the entity list without hiding entity tables', async () => {
     renderViewer({ showEntityList: false });
 
@@ -91,38 +77,11 @@ describe('RdfViewer entity filtering', () => {
     expect(screen.queryByRole('heading', { name: 'Entities' })).not.toBeInTheDocument();
   });
 
-  it('updates displayed entities when the filter changes', async () => {
-    const { rerender } = renderViewer();
-    expect(await screen.findByRole('heading', { name: 'Example creator' })).toBeInTheDocument();
-
-    rerender(
-      <RdfViewer
-        baseUri={BASE_URI}
-        dataSources={dataSources}
-        ontologySources={ontologySources}
-        entityFilter={rootSubjectFilter}
-      />,
-    );
-    await waitFor(() => {
-      expect(screen.queryByRole('heading', { name: 'Example creator' })).not.toBeInTheDocument();
-    });
-
-    rerender(
-      <RdfViewer
-        baseUri={BASE_URI}
-        dataSources={dataSources}
-        ontologySources={ontologySources}
-      />,
-    );
-    expect(await screen.findByRole('heading', { name: 'Example creator' })).toBeInTheDocument();
-  });
-
-  it('applies statement filtering independently of entity filtering', async () => {
+  it('skips statements selected by the statement filter', async () => {
     const skipDescription = (statement: Statement, _store: OntologyStore) =>
       statement.predicate.value === SCHEMA_DESCRIPTION;
 
     renderViewer({
-      entityFilter: rootSubjectFilter,
       skipStatement: skipDescription,
     });
 
@@ -130,12 +89,5 @@ describe('RdfViewer entity filtering', () => {
     expect(screen.queryByText('description')).not.toBeInTheDocument();
     expect(screen.queryByText('Example description')).not.toBeInTheDocument();
     expect(screen.getByText('creator')).toBeInTheDocument();
-  });
-
-  it('displays an empty state when no entities match', async () => {
-    renderViewer({ entityFilter: () => false });
-
-    expect(await screen.findByText('No entities found')).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'Entities' })).not.toBeInTheDocument();
   });
 });

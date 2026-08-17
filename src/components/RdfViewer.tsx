@@ -16,11 +16,6 @@ export type RdfSource = {
     contentType: ContentType
 }
 
-/**
- * Determines whether an RDF entity should be displayed.
- */
-export type EntityFilter = (entity: Subject, store: OntologyStore) => boolean;
-
 export type RdfViewerProps = {
     /**
      * Zero or more RDF data sources to load and display
@@ -56,12 +51,6 @@ export type RdfViewerProps = {
     skipStatement?: (statement: Statement, store: OntologyStore) => boolean;
 
     /**
-     * Optional function to filter the entities displayed by the viewer. Return true to include an entity.
-     * The complete RDF store remains available to the filter, including entities it excludes.
-     */
-    entityFilter?: EntityFilter;
-
-    /**
      * Whether to display the entity list. Defaults to true.
      */
     showEntityList?: boolean;
@@ -70,7 +59,7 @@ export type RdfViewerProps = {
 /**
  * Re-usable component for viewing RDF data.
  */
-export const RdfViewer: React.FC<RdfViewerProps> = ({ dataSources, ontologySources, baseUri, missingLabel, missingDescription, preferredPrefix, skipStatement, entityFilter, showEntityList = true }) => {
+export const RdfViewer: React.FC<RdfViewerProps> = ({ dataSources, ontologySources, baseUri, missingLabel, missingDescription, preferredPrefix, skipStatement, showEntityList = true }) => {
     const ontologyStore = useRef<OntologyStore>(new OntologyStore());
     // dummy state to trigger re-renders
     const [_, setStoreVersion] = useState(0);
@@ -156,42 +145,31 @@ export const RdfViewer: React.FC<RdfViewerProps> = ({ dataSources, ontologySourc
     }
     else {
         // rdflib reuses the same term object for repeated subjects, so Set deduplicates them.
-        const allSubjects = [...new Set(ontologyStore.current.getSubjects())];
-        const visibleSubjects = entityFilter
-            ? allSubjects.filter(entity => entityFilter(entity, ontologyStore.current))
-            : allSubjects;
-
-        if (visibleSubjects.length === 0) {
-            content = (<Flex justify="center" align="center" p="6">
-                <Text>No entities found</Text>
-            </Flex>);
-        }
-        else {
-            content = (<Flex gap="4">
-                {showEntityList && <Box className="entity-list" flexGrow="1">
-                    <EntityList
-                        visibleEntity={shouldHighlight}
-                        onEntitySelect={(entity) => { setShouldScrollIntoView(entity) }}
-                        descriptionFor={descriptionFor}
-                        nameFor={(entity) => nameFor(entity, "sidebar")}
-                        entities={visibleSubjects}
-                    />
-                </Box>}
-                <Box flexGrow="2" style={{ overflowY: 'auto' }}>
-                    <PropertyTableList
-                        subjects={visibleSubjects}
-                        ontologyStore={ontologyStore.current}
-                        skipStatement={skipStatement}
-                        nameFor={(entity) => nameFor(entity, "subject")}
-                        descriptionFor={descriptionFor}
-                        onEntityBecomesVisible={(entity) => { setShouldHighlight(entity) }}
-                        visibleEntity={shouldScrollIntoView}
-                        onEntityLink={entity => setShouldScrollIntoView(entity)}
-                    />
-                </Box>
-            </Flex>
-            )
-        }
+        const subjects = [...new Set(ontologyStore.current.getSubjects())];
+        content = (<Flex gap="4">
+            {showEntityList && <Box className="entity-list" flexGrow="1">
+                <EntityList
+                    visibleEntity={shouldHighlight}
+                    onEntitySelect={(entity) => { setShouldScrollIntoView(entity) }}
+                    descriptionFor={descriptionFor}
+                    nameFor={(entity) => nameFor(entity, "sidebar")}
+                    entities={subjects}
+                />
+            </Box>}
+            <Box flexGrow="2" style={{ overflowY: 'auto' }}>
+                <PropertyTableList
+                    subjects={subjects}
+                    ontologyStore={ontologyStore.current}
+                    skipStatement={skipStatement}
+                    nameFor={(entity) => nameFor(entity, "subject")}
+                    descriptionFor={descriptionFor}
+                    onEntityBecomesVisible={(entity) => { setShouldHighlight(entity) }}
+                    visibleEntity={shouldScrollIntoView}
+                    onEntityLink={entity => setShouldScrollIntoView(entity)}
+                />
+            </Box>
+        </Flex>
+        )
     }
 
     return (
@@ -202,11 +180,6 @@ export const RdfViewer: React.FC<RdfViewerProps> = ({ dataSources, ontologySourc
         </Container>
     )
 }
-
-function subjectKey(subject: Subject): string {
-    return `${subject.termType}:${subject.value}`;
-}
-
 
 const PropertyTableList: React.FC<{
     subjects: Subject[],
@@ -221,7 +194,6 @@ const PropertyTableList: React.FC<{
     visibleEntity: Subject | null
 }> = ({ subjects, ontologyStore, skipStatement, nameFor, descriptionFor, onEntityBecomesVisible, visibleEntity, onEntityLink }) => {
     const visibleEntityRef = useRef<HTMLDivElement>(null);
-    const visibleSubjectKeys = new Set(subjects.map(subjectKey));
 
     useEffect(() => {
         if (visibleEntityRef.current) {
@@ -251,11 +223,10 @@ const PropertyTableList: React.FC<{
                              }}
                             nameFor={nameFor}
                             descriptionFor={descriptionFor}
-                            canNavigateTo={(term) => {
+                            hasStatements={(term) => {
                                 if (term.termType === 'NamedNode' || term.termType === 'BlankNode') {
                                     // Only use the data store here, because the ontology store contains mostly classes and properties that won't be in the entity list
-                                    // A referenced entity must also be visible to be navigable
-                                    return visibleSubjectKeys.has(subjectKey(term)) && ontologyStore.data.statementsMatching(term, null, null).filter(statement => !skipStatement || !skipStatement(statement, ontologyStore)).length > 0;
+                                    return ontologyStore.data.statementsMatching(term, null, null).filter(statement => !skipStatement || !skipStatement(statement, ontologyStore)).length > 0;
                                 }
                                 return false;
                             }}
