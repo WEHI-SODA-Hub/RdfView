@@ -1,6 +1,11 @@
 import { cleanup, render, screen } from '@testing-library/react';
+import * as RDF from 'rdflib';
 import { afterEach, describe, expect, it } from 'vitest';
-import { RdfViewer, RdfViewerProps } from '../src/components/RdfViewer';
+import {
+  isDisplayableStatement,
+  RdfViewer,
+  RdfViewerProps,
+} from '../src/components/RdfViewer';
 
 const BASE_URI = 'https://example.org/crate/';
 
@@ -71,6 +76,39 @@ function renderViewer(props: Partial<RdfViewerProps> = {}) {
 }
 
 afterEach(cleanup);
+
+describe('isDisplayableStatement', () => {
+  const subject = RDF.namedNode('https://example.org/subject');
+  const predicate = RDF.namedNode('https://example.org/predicate');
+
+  // PropertyTable can render these standard RDF object terms
+  it.each([
+    ['named node', RDF.namedNode('https://example.org/object')],
+    ['blank node', RDF.blankNode('object')],
+    ['literal', RDF.literal('value')],
+  ])('accepts a named-node predicate with a %s object', (_, object) => {
+    expect(isDisplayableStatement(new RDF.Statement(subject, predicate, object))).toBe(true);
+  });
+
+  it('rejects a variable predicate', () => {
+    const statement = new RDF.Statement(
+      subject,
+      RDF.variable('predicate'),
+      RDF.literal('value'),
+    );
+
+    expect(isDisplayableStatement(statement)).toBe(false);
+  });
+
+  // rdflib can produce these extended terms, but PropertyTable cannot render them yet
+  it.each([
+    ['variable', RDF.variable('object')],
+    ['collection', new RDF.Collection([RDF.literal('value')])],
+    ['empty', new RDF.Empty()],
+  ])('rejects a named-node predicate with a %s object', (_, object) => {
+    expect(isDisplayableStatement(new RDF.Statement(subject, predicate, object))).toBe(false);
+  });
+});
 
 describe('RdfViewer display options', () => {
   it('displays all entities and navigation by default', async () => {

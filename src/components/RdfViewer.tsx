@@ -17,7 +17,7 @@ export type RdfSource = {
 }
 
 // Exclude rdflib terms such as variables and collections that PropertyTable cannot render yet
-function isDisplayableStatement(statement: Statement): boolean {
+export function isDisplayableStatement(statement: Statement): boolean {
     return statement.predicate.termType === "NamedNode" &&
         (statement.object.termType === "NamedNode" ||
             statement.object.termType === "BlankNode" ||
