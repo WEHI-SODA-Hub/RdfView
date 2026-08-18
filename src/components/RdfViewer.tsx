@@ -3,8 +3,7 @@ import { ContentType } from "rdflib/lib/types";
 import React, { useEffect, useRef, useState } from 'react';
 import { OntologyStore } from "../Store";
 import EntityList from './EntityList';
-import PropertyTable from './PropertyTable';
-import { Statement } from 'rdflib';
+import PropertyTable, { isDisplayableStatement } from './PropertyTable';
 import { InView } from "react-intersection-observer";
 import { Subject, Object } from '../rdfLibUtils';
 
@@ -14,14 +13,6 @@ import { Subject, Object } from '../rdfLibUtils';
 export type RdfSource = {
     content: string;
     contentType: ContentType
-}
-
-// Exclude rdflib terms such as variables and collections that PropertyTable cannot render yet
-export function isDisplayableStatement(statement: Statement): boolean {
-    return statement.predicate.termType === "NamedNode" &&
-        (statement.object.termType === "NamedNode" ||
-            statement.object.termType === "BlankNode" ||
-            statement.object.termType === "Literal");
 }
 
 export type RdfViewerProps = {
@@ -208,7 +199,7 @@ const PropertyTableList: React.FC<{
             maxHeight: 'calc(100vh - 200px)'
         }}>
             {subjects.map(subject => {
-                const statements = ontologyStore.anyStatementsMatching(subject, null, null).filter(isDisplayableStatement);
+                const statements = ontologyStore.anyStatementsMatching(subject, null, null);
                 return (
                     <InView onChange={(inView, entry) => {
                         if (inView) {

@@ -45,6 +45,20 @@ interface PropertyRow {
   objectUri: Object;
 }
 
+// Narrows an rdflib statement to the term types PropertyTable can render
+type DisplayableStatement = RDF.Statement & {
+  predicate: RDF.NamedNode;
+  object: RDF.NamedNode | RDF.BlankNode | RDF.Literal;
+};
+
+// PropertyTable only renders predicates and objects that can be represented as table rows
+export function isDisplayableStatement(statement: RDF.Statement): statement is DisplayableStatement {
+  return statement.predicate.termType === "NamedNode" &&
+    (statement.object.termType === "NamedNode" ||
+      statement.object.termType === "BlankNode" ||
+      statement.object.termType === "Literal");
+}
+
 export const PropertyTable: React.FC<PropertyTableProps> = ({
   subject,
   onEntityClick,
@@ -64,17 +78,9 @@ export const PropertyTable: React.FC<PropertyTableProps> = ({
   }
 
   // Convert to a format suitable for the table
-  const data: PropertyRow[] = statements.map(statement => {
+  const data: PropertyRow[] = statements.filter(isDisplayableStatement).map(statement => {
     const predicate = statement.predicate;
     const object = statement.object;
-
-    if (!(predicate.termType === "NamedNode")) {
-      throw new Error("Variables are not supported in the property table");
-    }
-
-    if (!(object.termType === "NamedNode" || object.termType === "BlankNode" || object.termType === "Literal")) {
-      throw new Error("Only NamedNode, BlankNode and Literal are supported as objects in the property table");
-    }
 
     return {
       predicate: nameFor(predicate),
