@@ -39,6 +39,10 @@ import type { RdfSource } from 'rdf-viewer';
 
 Refer to the source code for prop descriptions for each of these components.
 
+`RdfViewer` renders the graph supplied through `dataSources`. Consumers are
+expected to perform application-specific filtering upstream and pass the
+resulting graph to the component.
+
 ## Pre-processing Ontologies with `filterRdfs.ts`
 
 Large ontologies (e.g. schema.org, OWL, SKOS) contain thousands of triples that `rdf-viewer` never uses — axioms, domain/range constraints, deprecated terms, etc. Only three predicate types influence rendering:
