@@ -37,6 +37,16 @@ export class OntologyStore {
         this.updatePredicates();
     }
 
+    clearData(): void {
+        this.data = RDF.graph();
+    }
+
+    clearOntology(): void {
+        this.ontology = RDF.graph();
+        this.namePredicates = new Set([label]);
+        this.descriptionPredicates = new Set([comment]);
+    }
+
     /**
      * Yields named and blank node subjects from the data store.
      * A subject may therefore be yielded more than once.

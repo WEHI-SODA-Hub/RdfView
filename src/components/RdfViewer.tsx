@@ -58,7 +58,9 @@ export const RdfViewer: React.FC<RdfViewerProps> = ({ dataSources, ontologySourc
     // dummy state to trigger re-renders
     const [_, setStoreVersion] = useState(0);
     // const [selectedEntity, setSelectedEntity] = useState<Subject | null>(null);
-    const [loading, setLoading] = useState<boolean>(true);
+    // Track the independent loads so content is shown only when both source sets are ready
+    const [dataLoading, setDataLoading] = useState<boolean>(true);
+    const [ontologyLoading, setOntologyLoading] = useState<boolean>(true);
 
     // These two state variables used to be the same, but separating them avoids loops where scrolling triggers more scrolling etc.
 
@@ -109,30 +111,58 @@ export const RdfViewer: React.FC<RdfViewerProps> = ({ dataSources, ontologySourc
 
     // Load data sources and ontologies when they change
     useEffect(() => {
+        // Ignore completion from a data parse whose inputs have since changed
+        let isStale = false;
+
+        setDataLoading(true);
+        ontologyStore.current.clearData();
+
         Promise.all([
             ...dataSources.map(source => ontologyStore.current.addData(source.content, baseUri, source.contentType))
         ]).then(() => {
+            if (isStale) return;
+
             setStoreVersion(prev => prev + 1); // Update the dummy state to trigger re-render
-            setLoading(false);
+            setDataLoading(false);
         }).catch((error) => {
+            if (isStale) return;
+
             console.error("Error loading RDF data:", error);
-            setLoading(false);
+            setDataLoading(false);
         });
+
+        return () => {
+            isStale = true;
+        };
     }, [dataSources, baseUri])
     useEffect(() => {
+        // Ignore completion from an ontology parse whose inputs have since changed
+        let isStale = false;
+
+        setOntologyLoading(true);
+        ontologyStore.current.clearOntology();
+
         Promise.all([
             ...ontologySources.map(source => ontologyStore.current.addOntology(source.content, baseUri, source.contentType)),
         ]).then(() => {
+            if (isStale) return;
+
             setStoreVersion(prev => prev + 1); // Update the dummy state to trigger re-render
-            setLoading(false);
+            setOntologyLoading(false);
         }).catch((error) => {
+            if (isStale) return;
+
             console.error("Error loading RDF data:", error);
-            setLoading(false);
+            setOntologyLoading(false);
         });
+
+        return () => {
+            isStale = true;
+        };
     }, [ontologySources, baseUri])
 
     let content;
-    if (loading) {
+    if (dataLoading || ontologyLoading) {
         content = (<Flex justify="center" align="center" p="6">
             <Text size="4">Loading RDF data...</Text>
         </Flex>);
