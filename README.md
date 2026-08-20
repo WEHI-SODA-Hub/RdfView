@@ -9,6 +9,7 @@
 RdfView is similar to other table viewers like [`ro-crate-html-js`](https://github.com/Language-Research-Technology/ro-crate-html-js).
 RdfView was developed for somewhat different requirements.
 In particular:
+
 * It supports loading ontology files to describe the graph. This means that vocabularies other than schema.org can be fully understood
 * It is not RO-Crate specific
 * It shows triples with the same predicate separately instead of grouped
@@ -39,6 +40,8 @@ import type { RdfSource } from 'rdf-viewer';
 
 Refer to the source code for prop descriptions for each of these components.
 
+`RdfViewer` renders the graph supplied through `dataSources`. Consumers are expected to perform application-specific filtering upstream and pass the resulting graph to the component.
+
 ## Pre-processing Ontologies with `filterRdfs.ts`
 
 Large ontologies (e.g. schema.org, OWL, SKOS) contain thousands of triples that `rdf-viewer` never uses — axioms, domain/range constraints, deprecated terms, etc. Only three predicate types influence rendering:
@@ -46,6 +49,7 @@ Large ontologies (e.g. schema.org, OWL, SKOS) contain thousands of triples that 
 The `scripts/filterRdfs.ts` utility strips an ontology file down to only these triples, producing a much smaller file that is faster to fetch and parse in the browser.
 
 e.g.
+
 ```bash
 curl https://www.w3.org/2000/01/rdf-schema > rdfs.ttl
 node scripts/filterRdfs.ts rdfs.ttl > output.ttl

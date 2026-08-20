@@ -138,4 +138,9 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 
+# Local pnpm cache and build outputs
+.pnpm-store/
+dist-cli/
+dist-demo/
+
 scripts/wehi.sh

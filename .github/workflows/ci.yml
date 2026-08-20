@@ -35,6 +35,9 @@ jobs:
       - name: Type Check
         run: pnpm tsc --noEmit
 
+      - name: Test
+        run: pnpm test
+
       - name: Build Library
         run: pnpm build:lib
 

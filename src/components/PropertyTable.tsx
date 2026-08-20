@@ -25,7 +25,7 @@ interface PropertyTableProps {
    */
   onEntityClick: (entity: Subject, updateHistory?: boolean) => void;
   /**
-   * True if this entity has statements about it. 
+   * True if this entity has statements about it.
    * This can be used to determine whether to make the predicate clickable (i.e. if it has statements about it, it can be clicked to view those statements).
    */
   hasStatements: (term: Object) => boolean;
@@ -43,6 +43,20 @@ interface PropertyRow {
   // Object value (either entity label or literal value)
   object: string;
   objectUri: Object;
+}
+
+// Narrows an rdflib statement to the term types PropertyTable can render
+type DisplayableStatement = RDF.Statement & {
+  predicate: RDF.NamedNode;
+  object: RDF.NamedNode | RDF.BlankNode | RDF.Literal;
+};
+
+// PropertyTable only renders predicates and objects that can be represented as table rows
+export function isDisplayableStatement(statement: RDF.Statement): statement is DisplayableStatement {
+  return statement.predicate.termType === "NamedNode" &&
+    (statement.object.termType === "NamedNode" ||
+      statement.object.termType === "BlankNode" ||
+      statement.object.termType === "Literal");
 }
 
 export const PropertyTable: React.FC<PropertyTableProps> = ({
@@ -64,17 +78,9 @@ export const PropertyTable: React.FC<PropertyTableProps> = ({
   }
 
   // Convert to a format suitable for the table
-  const data: PropertyRow[] = statements.map(statement => {
+  const data: PropertyRow[] = statements.filter(isDisplayableStatement).map(statement => {
     const predicate = statement.predicate;
     const object = statement.object;
-
-    if (!(predicate.termType === "NamedNode")) {
-      throw new Error("Variables are not supported in the property table");
-    }
-
-    if (!(object.termType === "NamedNode" || object.termType === "BlankNode" || object.termType === "Literal")) {
-      throw new Error("Only NamedNode, BlankNode and Literal are supported as objects in the property table");
-    }
 
     return {
       predicate: nameFor(predicate),

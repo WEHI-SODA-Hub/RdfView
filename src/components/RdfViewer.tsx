@@ -3,8 +3,7 @@ import { ContentType } from "rdflib/lib/types";
 import React, { useEffect, useRef, useState } from 'react';
 import { OntologyStore } from "../Store";
 import EntityList from './EntityList';
-import PropertyTable from './PropertyTable';
-import {  Statement } from 'rdflib';
+import PropertyTable, { isDisplayableStatement } from './PropertyTable';
 import { InView } from "react-intersection-observer";
 import { Subject, Object } from '../rdfLibUtils';
 
@@ -46,20 +45,22 @@ export type RdfViewerProps = {
     preferredPrefix?: string;
 
     /**
-     * Optional function to skip certain statements from being displayed in the property table. 
+     * Whether to display the entity list. Defaults to true.
      */
-    skipStatement?: (statement: Statement, store: OntologyStore) => boolean;
+    showEntityList?: boolean;
 }
 
 /**
  * Re-usable component for viewing RDF data.
  */
-export const RdfViewer: React.FC<RdfViewerProps> = ({ dataSources, ontologySources, baseUri, missingLabel, missingDescription, preferredPrefix, skipStatement }) => {
+export const RdfViewer: React.FC<RdfViewerProps> = ({ dataSources, ontologySources, baseUri, missingLabel, missingDescription, preferredPrefix, showEntityList = true }) => {
     const ontologyStore = useRef<OntologyStore>(new OntologyStore());
     // dummy state to trigger re-renders
     const [_, setStoreVersion] = useState(0);
     // const [selectedEntity, setSelectedEntity] = useState<Subject | null>(null);
-    const [loading, setLoading] = useState<boolean>(true);
+    // Track the independent loads so content is shown only when both source sets are ready
+    const [dataLoading, setDataLoading] = useState<boolean>(true);
+    const [ontologyLoading, setOntologyLoading] = useState<boolean>(true);
 
     // These two state variables used to be the same, but separating them avoids loops where scrolling triggers more scrolling etc.
 
@@ -110,40 +111,67 @@ export const RdfViewer: React.FC<RdfViewerProps> = ({ dataSources, ontologySourc
 
     // Load data sources and ontologies when they change
     useEffect(() => {
+        // Ignore completion from a data parse whose inputs have since changed
+        let isStale = false;
+
+        setDataLoading(true);
+        ontologyStore.current.clearData();
+
         Promise.all([
             ...dataSources.map(source => ontologyStore.current.addData(source.content, baseUri, source.contentType))
         ]).then(() => {
+            if (isStale) return;
+
             setStoreVersion(prev => prev + 1); // Update the dummy state to trigger re-render
-            setLoading(false);
+            setDataLoading(false);
         }).catch((error) => {
+            if (isStale) return;
+
             console.error("Error loading RDF data:", error);
-            setLoading(false);
+            setDataLoading(false);
         });
+
+        return () => {
+            isStale = true;
+        };
     }, [dataSources, baseUri])
     useEffect(() => {
+        // Ignore completion from an ontology parse whose inputs have since changed
+        let isStale = false;
+
+        setOntologyLoading(true);
+        ontologyStore.current.clearOntology();
+
         Promise.all([
             ...ontologySources.map(source => ontologyStore.current.addOntology(source.content, baseUri, source.contentType)),
         ]).then(() => {
+            if (isStale) return;
+
             setStoreVersion(prev => prev + 1); // Update the dummy state to trigger re-render
-            setLoading(false);
+            setOntologyLoading(false);
         }).catch((error) => {
+            if (isStale) return;
+
             console.error("Error loading RDF data:", error);
-            setLoading(false);
+            setOntologyLoading(false);
         });
+
+        return () => {
+            isStale = true;
+        };
     }, [ontologySources, baseUri])
 
     let content;
-    if (loading) {
+    if (dataLoading || ontologyLoading) {
         content = (<Flex justify="center" align="center" p="6">
             <Text size="4">Loading RDF data...</Text>
         </Flex>);
     }
     else {
-        const subjects = [... new Set(ontologyStore.current.getSubjects())];
+        // rdflib reuses the same term object for repeated subjects, so Set deduplicates them.
+        const subjects = [...new Set(ontologyStore.current.getSubjects())];
         content = (<Flex gap="4">
-            <Box className="entity-list" flexGrow="1" style={{
-                // width: '300px', borderRight: '1px solid var(--gray-6)', overflowY: 'auto'
-            }}>
+            {showEntityList && <Box className="entity-list" flexGrow="1">
                 <EntityList
                     visibleEntity={shouldHighlight}
                     onEntitySelect={(entity) => { setShouldScrollIntoView(entity) }}
@@ -151,12 +179,11 @@ export const RdfViewer: React.FC<RdfViewerProps> = ({ dataSources, ontologySourc
                     nameFor={(entity) => nameFor(entity, "sidebar")}
                     entities={subjects}
                 />
-            </Box>
+            </Box>}
             <Box flexGrow="2" style={{ overflowY: 'auto' }}>
                 <PropertyTableList
                     subjects={subjects}
                     ontologyStore={ontologyStore.current}
-                    skipStatement={skipStatement}
                     nameFor={(entity) => nameFor(entity, "subject")}
                     descriptionFor={descriptionFor}
                     onEntityBecomesVisible={(entity) => { setShouldHighlight(entity) }}
@@ -177,11 +204,9 @@ export const RdfViewer: React.FC<RdfViewerProps> = ({ dataSources, ontologySourc
     )
 }
 
-
 const PropertyTableList: React.FC<{
     subjects: Subject[],
     ontologyStore: OntologyStore,
-    skipStatement?: (statement: Statement, store: OntologyStore) => boolean,
     nameFor: (entity: Object) => React.ReactNode,
     descriptionFor: (entity: Object) => React.ReactNode,
     // Called when an entity becomes visible in the main view (i.e. when it is scrolled into view).
@@ -189,7 +214,7 @@ const PropertyTableList: React.FC<{
     // Called when an entity is clicked in the property table (i.e. when an entity is linked from another entity's properties)
     onEntityLink: (entity: Subject) => void,
     visibleEntity: Subject | null
-}> = ({ subjects, ontologyStore, skipStatement, nameFor, descriptionFor, onEntityBecomesVisible, visibleEntity, onEntityLink }) => {
+}> = ({ subjects, ontologyStore, nameFor, descriptionFor, onEntityBecomesVisible, visibleEntity, onEntityLink }) => {
     const visibleEntityRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -204,7 +229,7 @@ const PropertyTableList: React.FC<{
             maxHeight: 'calc(100vh - 200px)'
         }}>
             {subjects.map(subject => {
-                const statements = ontologyStore.anyStatementsMatching(subject, null, null).filter(statement => !skipStatement || !skipStatement(statement, ontologyStore));
+                const statements = ontologyStore.anyStatementsMatching(subject, null, null);
                 return (
                     <InView onChange={(inView, entry) => {
                         if (inView) {
@@ -222,8 +247,8 @@ const PropertyTableList: React.FC<{
                             descriptionFor={descriptionFor}
                             hasStatements={(term) => {
                                 if (term.termType === 'NamedNode' || term.termType === 'BlankNode') {
-                                    // Only use data store here, because the ontology store contains mostly classes and properties that won't be in the entity list
-                                    return ontologyStore.data.statementsMatching(term, null, null).filter(statement => !skipStatement || !skipStatement(statement, ontologyStore)).length > 0;
+                                    // Only use the data store here, because the ontology store contains mostly classes and properties that won't be in the entity list
+                                    return ontologyStore.data.statementsMatching(term, null, null).some(isDisplayableStatement);
                                 }
                                 return false;
                             }}

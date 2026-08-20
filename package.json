@@ -32,6 +32,8 @@
     "build:demo": "vite build --config vite.config.demo.ts",
     "build": "pnpm build:lib && pnpm build:cli && pnpm build:demo",
     "preview": "vite preview --config vite.config.demo.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "prepublishOnly": "pnpm build:lib && pnpm build:cli"
   },
   "peerDependencies": {
@@ -47,13 +49,17 @@
   },
   "devDependencies": {
     "@rdfjs/types": "^2.0.1",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.2",
     "@types/node": "^20.19.33",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.7.0",
     "gh-pages": "^6.3.0",
+    "jsdom": "^29.1.1",
     "typescript": "^5.9.3",
     "vite": "^5.4.21",
-    "vite-plugin-dts": "^4.5.4"
+    "vite-plugin-dts": "^4.5.4",
+    "vitest": "^3.2.7"
   }
 }
