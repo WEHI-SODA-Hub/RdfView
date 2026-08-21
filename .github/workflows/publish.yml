@@ -1,5 +1,8 @@
 name: Publish to npm
 
+permissions:
+  id-token: write  # Required for OIDC
+
 on:
   workflow_run:
     workflows: ["CI"]
@@ -38,5 +41,3 @@ jobs:
 
       - name: Publish Package
         run: pnpm publish --no-git-checks --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
