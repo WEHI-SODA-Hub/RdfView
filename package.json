@@ -1,10 +1,11 @@
 {
   "name": "@wehi-soda-hub/rdf-viewer",
   "private": false,
-  "type": "module",
   "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
   },
+  "type": "module",
   "main": "dist/index.js",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
