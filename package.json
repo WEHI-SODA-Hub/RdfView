@@ -41,11 +41,6 @@
     "test:watch": "vitest",
     "prepublishOnly": "pnpm build:lib && pnpm build:cli"
   },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild"
-    ]
-  },
   "peerDependencies": {
     "@radix-ui/react-tooltip": "^1.2.0",
     "@radix-ui/themes": "^3.0.0",
