@@ -1,6 +1,10 @@
 {
   "name": "@wehi-soda-hub/rdf-viewer",
   "private": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WEHI-SODA-Hub/RdfView.git"
+  },
   "publishConfig": {
     "access": "public",
     "registry": "https://registry.npmjs.org"
